@@ -1,0 +1,118 @@
+@font-face {
+  font-family: "Bricolage Grotesque";
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: swap;
+  src: url("/assets/fonts/BricolageGrotesque.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "General Sans";
+  font-style: normal;
+  font-weight: 200 700;
+  font-display: swap;
+  src: url("/assets/fonts/GeneralSans.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url("/assets/fonts/JetBrainsMono.woff2") format("woff2");
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0.16 0.012 255;
+    --foreground: 0.94 0.008 255;
+
+    --card: 0.2 0.012 255;
+    --card-foreground: 0.94 0.008 255;
+
+    --popover: 0.2 0.012 255;
+    --popover-foreground: 0.94 0.008 255;
+
+    --primary: 0.72 0.155 195;
+    --primary-foreground: 0.1 0.012 255;
+
+    --secondary: 0.24 0.012 255;
+    --secondary-foreground: 0.82 0.008 255;
+
+    --muted: 0.24 0.01 255;
+    --muted-foreground: 0.56 0.012 255;
+
+    --accent: 0.78 0.148 75;
+    --accent-foreground: 0.1 0.012 75;
+
+    --destructive: 0.62 0.2 25;
+    --destructive-foreground: 0.98 0.005 25;
+
+    --border: 0.28 0.014 255;
+    --input: 0.26 0.012 255;
+    --ring: 0.72 0.155 195;
+    --radius: 0.375rem;
+
+    --chart-1: 0.72 0.155 195;
+    --chart-2: 0.78 0.148 75;
+    --chart-3: 0.68 0.155 150;
+    --chart-4: 0.65 0.13 290;
+    --chart-5: 0.62 0.2 25;
+
+    --sidebar: 0.18 0.012 255;
+    --sidebar-foreground: 0.82 0.008 255;
+    --sidebar-primary: 0.72 0.155 195;
+    --sidebar-primary-foreground: 0.1 0.012 255;
+    --sidebar-accent: 0.24 0.012 255;
+    --sidebar-accent-foreground: 0.82 0.008 255;
+    --sidebar-border: 0.26 0.014 255;
+    --sidebar-ring: 0.72 0.155 195;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+/* Scanline texture overlay */
+.scanlines::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 3px,
+    oklch(0 0 0 / 0.04) 3px,
+    oklch(0 0 0 / 0.04) 4px
+  );
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* Mono data styling */
+.data-mono {
+  font-family: "JetBrains Mono", monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* Grid line table styling */
+.lab-table th,
+.lab-table td {
+  border-bottom: 1px solid oklch(var(--border));
+}
+.lab-table th:not(:last-child),
+.lab-table td:not(:last-child) {
+  border-right: 1px solid oklch(var(--border) / 0.5);
+}
