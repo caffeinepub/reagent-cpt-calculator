@@ -46,41 +46,63 @@ interface ParsedRow {
   name: string;
   price: number;
   volume: number;
+  testsPerMl: number;
   mlCost: number;
   cpt: number;
 }
 
 // ── Sample Data ────────────────────────────────────────────────────────────
 const SAMPLE_DATA = [
-  { name: "Reagent A — Glucose Oxidase", price: 120.0, volume: 50 },
-  { name: "Reagent B — Hemoglobin A1c", price: 85.5, volume: 30 },
-  { name: "Reagent C — Cholesterol Total", price: 200.0, volume: 100 },
-  { name: "Reagent D — Troponin I", price: 45.0, volume: 20 },
-  { name: "Reagent E — C-Reactive Protein", price: 310.0, volume: 60 },
-  { name: "Reagent F — Thyroid TSH", price: 175.0, volume: 75 },
+  {
+    name: "Reagent A — Glucose Oxidase",
+    price: 120.0,
+    volume: 50,
+    testsPerMl: 2,
+  },
+  {
+    name: "Reagent B — Hemoglobin A1c",
+    price: 85.5,
+    volume: 30,
+    testsPerMl: 2,
+  },
+  {
+    name: "Reagent C — Cholesterol Total",
+    price: 200.0,
+    volume: 100,
+    testsPerMl: 2,
+  },
+  { name: "Reagent D — Troponin I", price: 45.0, volume: 20, testsPerMl: 2 },
+  {
+    name: "Reagent E — C-Reactive Protein",
+    price: 310.0,
+    volume: 60,
+    testsPerMl: 2,
+  },
+  { name: "Reagent F — Thyroid TSH", price: 175.0, volume: 75, testsPerMl: 2 },
 ];
 
 const STAT_KEYS = ["min", "avg", "max"] as const;
 
 function computeRows(
-  rows: { name: string; price: number; volume: number }[],
-  divisor: number,
+  rows: { name: string; price: number; volume: number; testsPerMl: number }[],
+  _divisor: number,
 ): ParsedRow[] {
   return rows.map((r) => {
     const mlCost = r.volume > 0 ? r.price / r.volume : 0;
-    const cpt = divisor > 0 ? mlCost / divisor : 0;
+    const cpt = r.testsPerMl > 0 ? mlCost / r.testsPerMl : 0;
     return { ...r, mlCost, cpt };
   });
 }
 
 // ── Export CSV ─────────────────────────────────────────────────────────────
-function exportCSV(rows: ParsedRow[], divisor: number) {
+function exportCSV(rows: ParsedRow[]) {
   const header = [
     "Reagent Name",
     "Price (₹)",
     "Volume (ml)",
+    "Tests/mL",
     "ML Cost (₹)",
-    `CPT (÷${divisor})`,
+    "CPT (₹)",
   ].join(",");
   const body = rows
     .map((r) =>
@@ -88,6 +110,7 @@ function exportCSV(rows: ParsedRow[], divisor: number) {
         `"${r.name.replace(/"/g, '""')}"`,
         r.price.toFixed(4),
         r.volume.toFixed(4),
+        r.testsPerMl,
         r.mlCost.toFixed(4),
         r.cpt.toFixed(4),
       ].join(","),
@@ -97,7 +120,7 @@ function exportCSV(rows: ParsedRow[], divisor: number) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `reagent-cpt-divisor${divisor}.csv`;
+  a.download = "reagent-cpt.csv";
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -115,33 +138,33 @@ export default function App() {
   const [formName, setFormName] = useState("");
   const [formPrice, setFormPrice] = useState("");
   const [formVolume, setFormVolume] = useState("");
+  const [formTestsPerMl, setFormTestsPerMl] = useState("");
 
   const { data: sessions, isLoading: sessionsLoading } = useListSessions();
   const saveSession = useSaveSession();
   const deleteSession = useDeleteSession();
 
-  // Recompute CPT when divisor changes
+  // Recompute CPT when divisor changes (kept for backwards compat with saved sessions)
   const handleDivisorChange = (val: number) => {
     setDivisor(val);
-    setRows((prev) =>
-      prev.map((r) => ({
-        ...r,
-        cpt: val > 0 ? r.mlCost / val : 0,
-      })),
-    );
   };
 
   const handleAddReagent = () => {
     const name = formName.trim();
     const price = Number(formPrice);
     const volume = Number(formVolume);
-    if (!name || price <= 0 || volume <= 0) return;
+    const testsPerMl = Number(formTestsPerMl);
+    if (!name || price <= 0 || volume <= 0 || testsPerMl <= 0) return;
     const mlCost = volume > 0 ? price / volume : 0;
-    const cpt = divisor > 0 ? mlCost / divisor : 0;
-    setRows((prev) => [...prev, { name, price, volume, mlCost, cpt }]);
+    const cpt = testsPerMl > 0 ? mlCost / testsPerMl : 0;
+    setRows((prev) => [
+      ...prev,
+      { name, price, volume, testsPerMl, mlCost, cpt },
+    ]);
     setFormName("");
     setFormPrice("");
     setFormVolume("");
+    setFormTestsPerMl("");
   };
 
   const handleDeleteRow = (index: number) => {
@@ -180,13 +203,19 @@ export default function App() {
   const loadSessionData = (session: Session) => {
     setDivisor(session.divisor);
     setRows(
-      session.reagents.map((r) => ({
-        name: r.name,
-        price: r.price,
-        volume: r.volume,
-        mlCost: r.mlCost,
-        cpt: r.cpt,
-      })),
+      session.reagents.map((r) => {
+        const testsPerMl = (r as any).testsPerMl ?? 1;
+        const mlCost = r.mlCost;
+        const cpt = testsPerMl > 0 ? mlCost / testsPerMl : r.cpt;
+        return {
+          name: r.name,
+          price: r.price,
+          volume: r.volume,
+          testsPerMl,
+          mlCost,
+          cpt,
+        };
+      }),
     );
   };
 
@@ -220,7 +249,10 @@ export default function App() {
   ];
 
   const canAdd =
-    formName.trim() !== "" && Number(formPrice) > 0 && Number(formVolume) > 0;
+    formName.trim() !== "" &&
+    Number(formPrice) > 0 &&
+    Number(formVolume) > 0 &&
+    Number(formTestsPerMl) > 0;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -275,7 +307,7 @@ export default function App() {
                 htmlFor="divisor"
                 className="text-muted-foreground text-xs font-mono uppercase tracking-wider"
               >
-                Divisor (tests per mL)
+                Global Divisor (fallback)
               </Label>
               <div className="flex gap-2">
                 <Input
@@ -306,7 +338,7 @@ export default function App() {
                 </div>
               </div>
               <p className="text-xs text-muted-foreground font-mono">
-                CPT = (Price ÷ Volume) ÷ Divisor
+                CPT = (Kit Price ÷ Volume) ÷ Tests per mL
               </p>
             </div>
           </div>
@@ -352,13 +384,13 @@ export default function App() {
                   data-ocid="reagent.input"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 <div className="space-y-1">
                   <Label
                     htmlFor="reagent-price"
                     className="text-muted-foreground text-xs font-mono uppercase tracking-wider"
                   >
-                    Price (₹)
+                    Kit Price (₹)
                   </Label>
                   <Input
                     id="reagent-price"
@@ -390,6 +422,28 @@ export default function App() {
                     placeholder="50"
                     value={formVolume}
                     onChange={(e) => setFormVolume(e.target.value)}
+                    onKeyDown={(e) =>
+                      e.key === "Enter" && canAdd && handleAddReagent()
+                    }
+                    className="bg-background border-border focus:ring-primary font-mono text-sm"
+                    data-ocid="reagent.input"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label
+                    htmlFor="reagent-tests-per-ml"
+                    className="text-muted-foreground text-xs font-mono uppercase tracking-wider"
+                  >
+                    Tests/mL
+                  </Label>
+                  <Input
+                    id="reagent-tests-per-ml"
+                    type="number"
+                    min={0.0001}
+                    step="any"
+                    placeholder="e.g. 2"
+                    value={formTestsPerMl}
+                    onChange={(e) => setFormTestsPerMl(e.target.value)}
                     onKeyDown={(e) =>
                       e.key === "Enter" && canAdd && handleAddReagent()
                     }
@@ -437,7 +491,7 @@ export default function App() {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => exportCSV(rows, divisor)}
+                    onClick={() => exportCSV(rows)}
                     className="gap-1.5 text-xs font-mono border-border hover:border-primary/50 hover:text-primary"
                     data-ocid="results.secondary_button"
                   >
@@ -525,18 +579,21 @@ export default function App() {
                         Reagent Name
                       </TableHead>
                       <TableHead className="font-mono text-xs text-muted-foreground uppercase tracking-wider text-right">
-                        Price (₹)
+                        Kit Price (₹)
                       </TableHead>
                       <TableHead className="font-mono text-xs text-muted-foreground uppercase tracking-wider text-right">
                         Volume (ml)
                       </TableHead>
                       <TableHead className="font-mono text-xs text-muted-foreground uppercase tracking-wider text-right">
+                        Tests/mL
+                      </TableHead>
+                      <TableHead className="font-mono text-xs text-muted-foreground uppercase tracking-wider text-right">
                         ML Cost (₹)
                       </TableHead>
-                      <TableHead className="font-mono text-xs text-accent uppercase tracking-wider text-right">
-                        CPT ÷{divisor}
-                      </TableHead>
                       <TableHead className="w-10" />
+                      <TableHead className="font-mono text-xs text-accent uppercase tracking-wider text-right">
+                        CPT (₹)
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -558,13 +615,11 @@ export default function App() {
                         <TableCell className="font-mono text-sm text-right tabular-nums">
                           {row.volume.toFixed(4)}
                         </TableCell>
+                        <TableCell className="font-mono text-sm text-right tabular-nums">
+                          {row.testsPerMl}
+                        </TableCell>
                         <TableCell className="font-mono text-sm text-right tabular-nums text-muted-foreground">
                           ₹{row.mlCost.toFixed(4)}
-                        </TableCell>
-                        <TableCell className="font-mono text-sm text-right tabular-nums font-600">
-                          <span className="text-accent">
-                            ₹{row.cpt.toFixed(4)}
-                          </span>
                         </TableCell>
                         <TableCell className="text-right">
                           <Button
@@ -576,6 +631,11 @@ export default function App() {
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </Button>
+                        </TableCell>
+                        <TableCell className="font-mono text-sm text-right tabular-nums font-600">
+                          <span className="text-accent">
+                            ₹{row.cpt.toFixed(4)}
+                          </span>
                         </TableCell>
                       </TableRow>
                     ))}
