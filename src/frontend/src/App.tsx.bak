@@ -50,7 +50,6 @@ interface ParsedRow {
   testsPerMl: number;
   mlCost: number;
   cpt: number;
-  mrp?: number;
 }
 
 const CONTACT_NUMBER = "9289920091";
@@ -161,10 +160,9 @@ const BUILTIN_REAGENTS = [
 ];
 
 // ── Export CSV ─────────────────────────────────────────────────────────────
-function exportCSV(rows: ParsedRow[], showMrp = false) {
+function exportCSV(rows: ParsedRow[]) {
   const header = [
     "Reagent Name",
-    ...(showMrp ? ["MRP (₹)"] : []),
     "Price (₹)",
     "Volume (ml)",
     "Tests/mL",
@@ -176,7 +174,6 @@ function exportCSV(rows: ParsedRow[], showMrp = false) {
     .map((r) =>
       [
         `"${r.name.replace(/"/g, '""')}"`,
-        ...(showMrp ? [r.mrp?.toFixed(4) ?? ""] : []),
         r.price.toFixed(4),
         r.volume.toFixed(4),
         r.testsPerMl,
@@ -204,8 +201,6 @@ function generateQuotationPDF(
   excludeTestsPerMl: boolean,
   excludeTotalTests: boolean,
   excludeMlCost: boolean,
-  excludeMrp = false,
-  showMrpCol = false,
 ) {
   const date = new Date().toLocaleDateString("en-IN", {
     day: "2-digit",
@@ -218,9 +213,6 @@ function generateQuotationPDF(
     `<th style="text-align:center;width:40px;">#</th>`,
     "<th>Reagent Name</th>",
     `<th style="text-align:right;">Volume</th>`,
-    ...(showMrpCol && !excludeMrp
-      ? [`<th style="text-align:right;">MRP (&#8377;)</th>`]
-      : []),
     `<th style="text-align:right;">Offer Price (&#8377;)</th>`,
     ...(!excludeTestsPerMl
       ? [`<th style="text-align:right;">Tests/mL</th>`]
@@ -241,7 +233,6 @@ function generateQuotationPDF(
         <td style="padding:8px 10px;border:1px solid #ddd;text-align:center;">${i + 1}</td>
         <td style="padding:8px 10px;border:1px solid #ddd;">${row.name}</td>
         <td style="padding:8px 10px;border:1px solid #ddd;text-align:right;">${row.volume.toFixed(2)} ml</td>
-        ${showMrpCol && !excludeMrp ? `<td style="padding:8px 10px;border:1px solid #ddd;text-align:right;">&#8377;${row.mrp != null ? row.mrp.toFixed(2) : "-"}</td>` : ""}
         <td style="padding:8px 10px;border:1px solid #ddd;text-align:right;">&#8377;${row.price.toFixed(2)}</td>
         ${!excludeTestsPerMl ? `<td style="padding:8px 10px;border:1px solid #ddd;text-align:right;">${row.testsPerMl}</td>` : ""}
         ${!excludeTotalTests ? `<td style="padding:8px 10px;border:1px solid #ddd;text-align:right;font-weight:600;">${(row.volume * row.testsPerMl).toFixed(2)}</td>` : ""}
@@ -357,7 +348,6 @@ export default function App() {
   const [excludeTestsPerMl, setExcludeTestsPerMl] = useState(false);
   const [excludeTotalTests, setExcludeTotalTests] = useState(false);
   const [excludeMlCost, setExcludeMlCost] = useState(false);
-  const [excludeMrp, setExcludeMrp] = useState(false);
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
   const [quotationOpen, setQuotationOpen] = useState(false);
   const [customerName, setCustomerName] = useState("");
@@ -370,8 +360,6 @@ export default function App() {
   const [formTestsPerMl, setFormTestsPerMl] = useState("");
   const [semiAssay, setSemiAssay] = useState(false);
   const [fullyAssay, setFullyAssay] = useState(false);
-  const [showMrp, setShowMrp] = useState(false);
-  const [formMrp, setFormMrp] = useState("");
 
   // Autocomplete state
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -431,16 +419,16 @@ export default function App() {
     else if (fullyAssay) name = `${name} (F)`;
     const mlCost = volume > 0 ? price / volume : 0;
     const cpt = testsPerMl > 0 ? mlCost / testsPerMl : 0;
-    const mrp = showMrp ? Number(formMrp) || undefined : undefined;
     setRows((prev) => [
       ...prev,
-      { name, price, volume, testsPerMl, mlCost, cpt, mrp },
+      { name, price, volume, testsPerMl, mlCost, cpt },
     ]);
     setFormName("");
     setFormPrice("");
     setFormVolume("");
     setFormTestsPerMl("");
-    setFormMrp("");
+    setSemiAssay(false);
+    setFullyAssay(false);
     setShowSuggestions(false);
   };
 
@@ -561,8 +549,6 @@ export default function App() {
       excludeTestsPerMl,
       excludeTotalTests,
       excludeMlCost,
-      excludeMrp,
-      showMrp,
     );
     setQuotationOpen(false);
   };
@@ -629,10 +615,7 @@ export default function App() {
                       checked={semiAssay}
                       onChange={(e) => {
                         setSemiAssay(e.target.checked);
-                        if (e.target.checked) {
-                          setFullyAssay(false);
-                          setFormTestsPerMl("2");
-                        }
+                        if (e.target.checked) setFullyAssay(false);
                       }}
                       className="accent-primary w-3.5 h-3.5"
                       data-ocid="reagent.semi_assay.checkbox"
@@ -645,25 +628,12 @@ export default function App() {
                       checked={fullyAssay}
                       onChange={(e) => {
                         setFullyAssay(e.target.checked);
-                        if (e.target.checked) {
-                          setSemiAssay(false);
-                          setFormTestsPerMl("4");
-                        }
+                        if (e.target.checked) setSemiAssay(false);
                       }}
                       className="accent-primary w-3.5 h-3.5"
                       data-ocid="reagent.fully_assay.checkbox"
                     />
                     Fully Assay
-                  </label>
-                  <label className="flex items-center gap-1.5 cursor-pointer select-none text-xs font-mono text-muted-foreground uppercase tracking-wider">
-                    <input
-                      type="checkbox"
-                      checked={showMrp}
-                      onChange={(e) => setShowMrp(e.target.checked)}
-                      className="accent-primary w-3.5 h-3.5"
-                      data-ocid="reagent.mrp.checkbox"
-                    />
-                    MRP
                   </label>
                 </div>
                 <Label
@@ -715,33 +685,7 @@ export default function App() {
                   )}
                 </div>
               </div>
-              <div
-                className={`grid gap-2 ${showMrp ? "grid-cols-4" : "grid-cols-3"}`}
-              >
-                {showMrp && (
-                  <div className="space-y-1">
-                    <Label
-                      htmlFor="reagent-mrp"
-                      className="text-muted-foreground text-xs font-mono uppercase tracking-wider"
-                    >
-                      MRP (₹)
-                    </Label>
-                    <Input
-                      id="reagent-mrp"
-                      type="number"
-                      min={0}
-                      step="any"
-                      placeholder="0.00"
-                      value={formMrp}
-                      onChange={(e) => setFormMrp(e.target.value)}
-                      onKeyDown={(e) =>
-                        e.key === "Enter" && canAdd && handleAddReagent()
-                      }
-                      className="bg-background border-border focus:ring-primary font-mono text-sm"
-                      data-ocid="reagent.input"
-                    />
-                  </div>
-                )}
+              <div className="grid grid-cols-3 gap-2">
                 <div className="space-y-1">
                   <Label
                     htmlFor="reagent-price"
@@ -848,7 +792,7 @@ export default function App() {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => exportCSV(rows, showMrp)}
+                    onClick={() => exportCSV(rows)}
                     className="gap-1.5 text-xs font-mono border-border hover:border-primary/50 hover:text-primary"
                     data-ocid="results.secondary_button"
                   >
@@ -1064,11 +1008,6 @@ export default function App() {
                       <TableHead className="font-mono text-xs text-muted-foreground uppercase tracking-wider">
                         Reagent Name
                       </TableHead>
-                      {showMrp && (
-                        <TableHead className="font-mono text-xs text-muted-foreground uppercase tracking-wider text-right">
-                          MRP (₹) <span className="text-primary/60">✎</span>
-                        </TableHead>
-                      )}
                       <TableHead className="font-mono text-xs text-muted-foreground uppercase tracking-wider text-right">
                         Offer Price (₹){" "}
                         <span className="text-primary/60">✎</span>
@@ -1112,39 +1051,6 @@ export default function App() {
                         <TableCell className="font-sans text-sm text-foreground">
                           {row.name}
                         </TableCell>
-                        {/* MRP */}
-                        {showMrp && (
-                          <TableCell className="p-1">
-                            <div className="relative flex items-center justify-end">
-                              <span className="absolute left-2 text-xs text-muted-foreground pointer-events-none select-none">
-                                ₹
-                              </span>
-                              <Input
-                                type="number"
-                                step="any"
-                                min={0}
-                                value={row.mrp ?? ""}
-                                onChange={(e) =>
-                                  setRows((prev) =>
-                                    prev.map((r, idx) =>
-                                      idx === i
-                                        ? {
-                                            ...r,
-                                            mrp:
-                                              e.target.value === ""
-                                                ? undefined
-                                                : Number(e.target.value),
-                                          }
-                                        : r,
-                                    ),
-                                  )
-                                }
-                                className="pl-5 pr-2 py-1 h-7 w-28 text-right font-mono text-sm tabular-nums bg-transparent border-transparent focus:border-border focus:bg-background transition-colors"
-                                data-ocid="results.input"
-                              />
-                            </div>
-                          </TableCell>
-                        )}
                         {/* Offer Price */}
                         <TableCell className="p-1">
                           <div className="relative flex items-center justify-end">
@@ -1306,20 +1212,6 @@ export default function App() {
                         className="text-sm font-mono cursor-pointer select-none"
                       >
                         ML Cost
-                      </Label>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Checkbox
-                        id="exclude-mrp"
-                        checked={excludeMrp}
-                        onCheckedChange={(v) => setExcludeMrp(!!v)}
-                        data-ocid="exclude.mrp.checkbox"
-                      />
-                      <Label
-                        htmlFor="exclude-mrp"
-                        className="text-sm font-mono cursor-pointer select-none"
-                      >
-                        MRP
                       </Label>
                     </div>
                   </div>
