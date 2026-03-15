@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -24,16 +25,16 @@ import {
 import {
   ChevronRight,
   Download,
+  FileText,
   FlaskConical,
   FolderOpen,
   Loader2,
   Plus,
   Save,
-  TestTubes,
   Trash2,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ReagentRow, Session } from "./backend";
 import {
   useDeleteSession,
@@ -51,48 +52,112 @@ interface ParsedRow {
   cpt: number;
 }
 
-// ── Sample Data ────────────────────────────────────────────────────────────
-const SAMPLE_DATA = [
-  {
-    name: "Reagent A — Glucose Oxidase",
-    price: 120.0,
-    volume: 50,
-    testsPerMl: 2,
-  },
-  {
-    name: "Reagent B — Hemoglobin A1c",
-    price: 85.5,
-    volume: 30,
-    testsPerMl: 2,
-  },
-  {
-    name: "Reagent C — Cholesterol Total",
-    price: 200.0,
-    volume: 100,
-    testsPerMl: 2,
-  },
-  { name: "Reagent D — Troponin I", price: 45.0, volume: 20, testsPerMl: 2 },
-  {
-    name: "Reagent E — C-Reactive Protein",
-    price: 310.0,
-    volume: 60,
-    testsPerMl: 2,
-  },
-  { name: "Reagent F — Thyroid TSH", price: 175.0, volume: 75, testsPerMl: 2 },
+const CONTACT_NUMBER = "9289920091";
+
+// ── Built-in clinical reagents list ───────────────────────────────────────
+const BUILTIN_REAGENTS = [
+  "Glucose",
+  "Urea",
+  "Creatinine",
+  "Uric Acid",
+  "Cholesterol",
+  "Triglycerides",
+  "HDL Cholesterol",
+  "LDL Cholesterol",
+  "VLDL Cholesterol",
+  "Total Protein",
+  "Albumin",
+  "Globulin",
+  "Bilirubin Total",
+  "Bilirubin Direct",
+  "Bilirubin Indirect",
+  "SGOT (AST)",
+  "SGPT (ALT)",
+  "Alkaline Phosphatase",
+  "GGT",
+  "LDH",
+  "Amylase",
+  "Lipase",
+  "Calcium",
+  "Phosphorus",
+  "Sodium",
+  "Potassium",
+  "Chloride",
+  "Bicarbonate",
+  "Iron",
+  "TIBC",
+  "Ferritin",
+  "Hemoglobin",
+  "HbA1c",
+  "ESR",
+  "CRP",
+  "TSH",
+  "T3",
+  "T4",
+  "Free T3",
+  "Free T4",
+  "Cortisol",
+  "Insulin",
+  "FSH",
+  "LH",
+  "Prolactin",
+  "Testosterone",
+  "Estradiol",
+  "Progesterone",
+  "Beta HCG",
+  "PSA Total",
+  "PSA Free",
+  "CEA",
+  "AFP",
+  "CA 125",
+  "CA 19-9",
+  "CA 15-3",
+  "Vitamin D",
+  "Vitamin B12",
+  "Folic Acid",
+  "Magnesium",
+  "Zinc",
+  "Copper",
+  "Homocysteine",
+  "Fibrinogen",
+  "D-Dimer",
+  "PT",
+  "APTT",
+  "INR",
+  "Platelet Count",
+  "WBC Count",
+  "RBC Count",
+  "Hematocrit",
+  "MCV",
+  "MCH",
+  "MCHC",
+  "RDW",
+  "Neutrophils",
+  "Lymphocytes",
+  "Monocytes",
+  "Eosinophils",
+  "Basophils",
+  "Blood Culture",
+  "Urine Culture",
+  "Stool Culture",
+  "Sensitivity Testing",
+  "HIV",
+  "HBsAg",
+  "Anti-HCV",
+  "VDRL",
+  "Widal Test",
+  "Dengue NS1",
+  "Dengue IgM",
+  "Dengue IgG",
+  "Malaria Antigen",
+  "Typhoid IgM",
+  "ANA",
+  "Anti-dsDNA",
+  "RF",
+  "ASO",
+  "Complement C3",
+  "Complement C4",
 ];
-
-const STAT_KEYS = ["min", "avg", "max"] as const;
-
-function computeRows(
-  rows: { name: string; price: number; volume: number; testsPerMl: number }[],
-  _divisor: number,
-): ParsedRow[] {
-  return rows.map((r) => {
-    const mlCost = r.volume > 0 ? r.price / r.volume : 0;
-    const cpt = r.testsPerMl > 0 ? mlCost / r.testsPerMl : 0;
-    return { ...r, mlCost, cpt };
-  });
-}
 
 // ── Export CSV ─────────────────────────────────────────────────────────────
 function exportCSV(rows: ParsedRow[]) {
@@ -101,6 +166,7 @@ function exportCSV(rows: ParsedRow[]) {
     "Price (₹)",
     "Volume (ml)",
     "Tests/mL",
+    "Total Tests",
     "ML Cost (₹)",
     "CPT (₹)",
   ].join(",");
@@ -111,6 +177,7 @@ function exportCSV(rows: ParsedRow[]) {
         r.price.toFixed(4),
         r.volume.toFixed(4),
         r.testsPerMl,
+        (r.volume * r.testsPerMl).toFixed(2),
         r.mlCost.toFixed(4),
         r.cpt.toFixed(4),
       ].join(","),
@@ -125,36 +192,231 @@ function exportCSV(rows: ParsedRow[]) {
   URL.revokeObjectURL(url);
 }
 
+// ── Generate PDF Quotation via Print ───────────────────────────────────────
+function generateQuotationPDF(
+  selectedRows: ParsedRow[],
+  customerName: string,
+  labName: string,
+  exclusiveGst: boolean,
+  excludeTestsPerMl: boolean,
+  excludeTotalTests: boolean,
+  excludeMlCost: boolean,
+) {
+  const date = new Date().toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+
+  // Build dynamic column headers
+  const colHeaders = [
+    `<th style="text-align:center;width:40px;">#</th>`,
+    "<th>Reagent Name</th>",
+    `<th style="text-align:right;">Volume</th>`,
+    `<th style="text-align:right;">Kit Price (&#8377;)</th>`,
+    ...(!excludeTestsPerMl
+      ? [`<th style="text-align:right;">Tests/mL</th>`]
+      : []),
+    ...(!excludeTotalTests
+      ? [`<th style="text-align:right;">Total Tests</th>`]
+      : []),
+    ...(!excludeMlCost
+      ? [`<th style="text-align:right;">ML Cost (&#8377;)</th>`]
+      : []),
+    `<th style="text-align:right;">CPT (&#8377;)</th>`,
+  ].join("");
+
+  const itemsHTML = selectedRows
+    .map(
+      (row, i) => `
+      <tr>
+        <td style="padding:8px 10px;border:1px solid #ddd;text-align:center;">${i + 1}</td>
+        <td style="padding:8px 10px;border:1px solid #ddd;">${row.name}</td>
+        <td style="padding:8px 10px;border:1px solid #ddd;text-align:right;">${row.volume.toFixed(2)} ml</td>
+        <td style="padding:8px 10px;border:1px solid #ddd;text-align:right;">&#8377;${row.price.toFixed(2)}</td>
+        ${!excludeTestsPerMl ? `<td style="padding:8px 10px;border:1px solid #ddd;text-align:right;">${row.testsPerMl}</td>` : ""}
+        ${!excludeTotalTests ? `<td style="padding:8px 10px;border:1px solid #ddd;text-align:right;font-weight:600;">${(row.volume * row.testsPerMl).toFixed(2)}</td>` : ""}
+        ${!excludeMlCost ? `<td style="padding:8px 10px;border:1px solid #ddd;text-align:right;">&#8377;${row.mlCost.toFixed(4)}</td>` : ""}
+        <td style="padding:8px 10px;border:1px solid #ddd;text-align:right;font-weight:600;">&#8377;${row.cpt.toFixed(4)}</td>
+      </tr>`,
+    )
+    .join("");
+
+  const hasAbbreviations = selectedRows.some(
+    (row) => row.name.endsWith("(S)") || row.name.endsWith("(F)"),
+  );
+  const gstLine = exclusiveGst
+    ? "<li><strong>GST:</strong> All items are exclusive of GST.</li>"
+    : "";
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8" />
+      <title>Quotation</title>
+      <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 30px; color: #111; }
+        h1 { font-size: 22px; margin-bottom: 4px; }
+        .header-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
+        .label { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 0.05em; }
+        .value { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 16px 0; }
+        th { background: #1a4f8a; color: white; padding: 9px 10px; text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+        th:not(:first-child) { text-align: right; }
+        tr:nth-child(even) td { background: #f5f8ff; }
+        .tc-section { margin-top: 24px; padding-top: 16px; border-top: 2px solid #1a4f8a; }
+        .tc-section h3 { font-size: 14px; color: #1a4f8a; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
+        .tc-section ul { margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.8; }
+        .footer { margin-top: 32px; font-size: 12px; color: #555; text-align: center; border-top: 1px solid #ddd; padding-top: 12px; }
+        .divider { border: none; border-top: 1px solid #ddd; margin: 16px 0; }
+        @media print { body { padding: 20px; } }
+      </style>
+    </head>
+    <body>
+      <div class="header-row">
+        <div>
+          <div style="font-size:12px;color:#666;margin-top:2px;">Clinical Lab Cost Analysis</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="label">Date</div>
+          <div class="value">${date}</div>
+          <div class="label">Contact</div>
+          <div class="value">${CONTACT_NUMBER}</div>
+        </div>
+      </div>
+
+      <h1 style="color:#1a4f8a;">QUOTATION</h1>
+      <hr class="divider" />
+
+      <div style="display:flex;gap:40px;margin-bottom:16px;">
+        <div>
+          <div class="label">Customer Name</div>
+          <div class="value">${customerName || "&#8212;"}</div>
+        </div>
+        <div>
+          <div class="label">Lab / Organization Name</div>
+          <div class="value">${labName || "&#8212;"}</div>
+        </div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            ${colHeaders}
+          </tr>
+        </thead>
+        <tbody>
+          ${itemsHTML}
+        </tbody>
+      </table>
+
+      <div class="tc-section">
+        <h3>Terms &amp; Conditions</h3>
+        <ul>
+          <li><strong>Quotation Validity:</strong> 30 Days from the date of this quotation.</li>
+          <li><strong>Payment:</strong> 50% advance along with the confirmed PO and 50% PDC cheque on Delivery.</li>
+          <li><strong>Delivery:</strong> As per Ex-Stocks.</li>
+          ${gstLine}
+        </ul>
+      </div>
+
+      <div class="footer">
+        For queries, contact: ${CONTACT_NUMBER} &nbsp;|&nbsp; Generated on ${date}
+      </div>
+      ${hasAbbreviations ? '<div style="margin-top:16px;font-size:11px;color:#555;border-top:1px solid #eee;padding-top:8px;"><strong>Abbreviations:</strong> (S) = Semi Assay &nbsp;|&nbsp; (F) = Fully Assay</div>' : ""}
+    </body>
+    </html>
+  `;
+
+  const printWindow = window.open("", "_blank", "width=900,height=700");
+  if (!printWindow) return;
+  printWindow.document.write(html);
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.onload = () => {
+    printWindow.print();
+  };
+}
+
 // ── Main App ───────────────────────────────────────────────────────────────
 export default function App() {
-  const [divisor, setDivisor] = useState(2);
-  const [rows, setRows] = useState<ParsedRow[]>(() =>
-    computeRows(SAMPLE_DATA, 2),
-  );
+  const [rows, setRows] = useState<ParsedRow[]>([]);
   const [saveOpen, setSaveOpen] = useState(false);
   const [sessionName, setSessionName] = useState("");
+  const [exclusiveGst, setExclusiveGst] = useState(false);
+  const [excludeTestsPerMl, setExcludeTestsPerMl] = useState(false);
+  const [excludeTotalTests, setExcludeTotalTests] = useState(false);
+  const [excludeMlCost, setExcludeMlCost] = useState(false);
+  const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
+  const [quotationOpen, setQuotationOpen] = useState(false);
+  const [customerName, setCustomerName] = useState("");
+  const [labName, setLabName] = useState("");
 
   // Add reagent form state
   const [formName, setFormName] = useState("");
   const [formPrice, setFormPrice] = useState("");
   const [formVolume, setFormVolume] = useState("");
   const [formTestsPerMl, setFormTestsPerMl] = useState("");
+  const [semiAssay, setSemiAssay] = useState(false);
+  const [fullyAssay, setFullyAssay] = useState(false);
+
+  // Autocomplete state
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>([]);
+  const autocompleteWrapperRef = useRef<HTMLDivElement>(null);
 
   const { data: sessions, isLoading: sessionsLoading } = useListSessions();
   const saveSession = useSaveSession();
   const deleteSession = useDeleteSession();
 
-  // Recompute CPT when divisor changes (kept for backwards compat with saved sessions)
-  const handleDivisorChange = (val: number) => {
-    setDivisor(val);
+  // Close suggestions on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        autocompleteWrapperRef.current &&
+        !autocompleteWrapperRef.current.contains(e.target as Node)
+      ) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleNameChange = (value: string) => {
+    setFormName(value);
+    if (!value.trim()) {
+      setShowSuggestions(false);
+      setFilteredSuggestions([]);
+      return;
+    }
+    const lower = value.toLowerCase();
+    const existingNames = rows.map((r) => r.name);
+    const combined = Array.from(
+      new Set([...BUILTIN_REAGENTS, ...existingNames]),
+    );
+    const matches = combined.filter((name) =>
+      name.toLowerCase().includes(lower),
+    );
+    setFilteredSuggestions(matches);
+    setShowSuggestions(matches.length > 0);
+  };
+
+  const handleSuggestionClick = (name: string) => {
+    setFormName(name);
+    setShowSuggestions(false);
+    setFilteredSuggestions([]);
   };
 
   const handleAddReagent = () => {
-    const name = formName.trim();
+    let name = formName.trim();
     const price = Number(formPrice);
     const volume = Number(formVolume);
     const testsPerMl = Number(formTestsPerMl);
     if (!name || price <= 0 || volume <= 0 || testsPerMl <= 0) return;
+    if (semiAssay) name = `${name} (S)`;
+    else if (fullyAssay) name = `${name} (F)`;
     const mlCost = volume > 0 ? price / volume : 0;
     const cpt = testsPerMl > 0 ? mlCost / testsPerMl : 0;
     setRows((prev) => [
@@ -165,14 +427,54 @@ export default function App() {
     setFormPrice("");
     setFormVolume("");
     setFormTestsPerMl("");
+    setSemiAssay(false);
+    setFullyAssay(false);
+    setShowSuggestions(false);
   };
 
   const handleDeleteRow = (index: number) => {
     setRows((prev) => prev.filter((_, i) => i !== index));
+    setSelectedRows((prev) => {
+      const next = new Set<number>();
+      for (const idx of prev) {
+        if (idx < index) next.add(idx);
+        else if (idx > index) next.add(idx - 1);
+      }
+      return next;
+    });
   };
 
-  const loadSample = () => {
-    setRows(computeRows(SAMPLE_DATA, divisor));
+  // ── Cell edit handler ────────────────────────────────────────────────────
+  const handleCellChange = (
+    index: number,
+    field: "price" | "mlCost" | "volume" | "testsPerMl",
+    value: string,
+  ) => {
+    const parsed = Number.parseFloat(value);
+    if (Number.isNaN(parsed) || parsed < 0) return;
+    setRows((prev) =>
+      prev.map((row, i) => {
+        if (i !== index) return row;
+        if (field === "price") {
+          const mlCost = row.volume > 0 ? parsed / row.volume : 0;
+          const cpt = row.testsPerMl > 0 ? mlCost / row.testsPerMl : 0;
+          return { ...row, price: parsed, mlCost, cpt };
+        }
+        if (field === "volume") {
+          const price = parsed * row.mlCost;
+          const cpt = row.testsPerMl > 0 ? row.mlCost / row.testsPerMl : 0;
+          return { ...row, volume: parsed, price, cpt };
+        }
+        if (field === "testsPerMl") {
+          const cpt = parsed > 0 ? row.mlCost / parsed : 0;
+          return { ...row, testsPerMl: parsed, cpt };
+        }
+        // field === "mlCost"
+        const price = parsed * row.volume;
+        const cpt = row.testsPerMl > 0 ? parsed / row.testsPerMl : 0;
+        return { ...row, mlCost: parsed, price, cpt };
+      }),
+    );
   };
 
   const handleSave = () => {
@@ -186,9 +488,9 @@ export default function App() {
     }));
     saveSession.mutate(
       {
-        id: `session-${Date.now()}`,
+        id: "session-$Date.now()",
         name: sessionName.trim(),
-        divisor,
+        divisor: 1,
         reagents: reagentRows,
       },
       {
@@ -201,7 +503,6 @@ export default function App() {
   };
 
   const loadSessionData = (session: Session) => {
-    setDivisor(session.divisor);
     setRows(
       session.reagents.map((r) => {
         const testsPerMl = (r as any).testsPerMl ?? 1;
@@ -217,36 +518,40 @@ export default function App() {
         };
       }),
     );
+    setSelectedRows(new Set());
   };
 
-  // Summary stats
-  const cptValues = rows.map((r) => r.cpt);
-  const minCPT = cptValues.length ? Math.min(...cptValues) : 0;
-  const maxCPT = cptValues.length ? Math.max(...cptValues) : 0;
-  const avgCPT = cptValues.length
-    ? cptValues.reduce((a, b) => a + b, 0) / cptValues.length
-    : 0;
+  const toggleRowSelection = (index: number) => {
+    setSelectedRows((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      return next;
+    });
+  };
 
-  const stats = [
-    {
-      key: STAT_KEYS[0],
-      label: "Min CPT",
-      value: minCPT,
-      hint: "Lowest cost per test",
-    },
-    {
-      key: STAT_KEYS[1],
-      label: "Avg CPT",
-      value: avgCPT,
-      hint: "Mean cost per test",
-    },
-    {
-      key: STAT_KEYS[2],
-      label: "Max CPT",
-      value: maxCPT,
-      hint: "Highest cost per test",
-    },
-  ];
+  const toggleSelectAll = () => {
+    if (selectedRows.size === rows.length) {
+      setSelectedRows(new Set());
+    } else {
+      setSelectedRows(new Set(rows.map((_, i) => i)));
+    }
+  };
+
+  const handleGenerateQuotation = () => {
+    const chosen = rows.filter((_, i) => selectedRows.has(i));
+    if (chosen.length === 0) return;
+    generateQuotationPDF(
+      chosen,
+      customerName,
+      labName,
+      exclusiveGst,
+      excludeTestsPerMl,
+      excludeTotalTests,
+      excludeMlCost,
+    );
+    setQuotationOpen(false);
+  };
 
   const canAdd =
     formName.trim() !== "" &&
@@ -287,102 +592,98 @@ export default function App() {
       </header>
 
       <main className="container mx-auto px-4 py-8 flex-1 space-y-8">
-        {/* ── Controls Row ── */}
+        {/* ── Add Reagent Form ── */}
         <motion.section
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35 }}
-          className="grid grid-cols-1 md:grid-cols-2 gap-6"
         >
-          {/* Divisor */}
           <div className="bg-card rounded-lg border border-border p-5 space-y-3">
-            <div className="flex items-center gap-2 mb-1">
-              <TestTubes className="h-4 w-4 text-primary" />
+            <div className="flex items-center gap-2">
+              <Plus className="h-4 w-4 text-primary" />
               <span className="font-display text-sm font-600 text-foreground uppercase tracking-widest">
-                Calculation Settings
+                Add Reagent
               </span>
-            </div>
-            <div className="space-y-1.5">
-              <Label
-                htmlFor="divisor"
-                className="text-muted-foreground text-xs font-mono uppercase tracking-wider"
-              >
-                Global Divisor (fallback)
-              </Label>
-              <div className="flex gap-2">
-                <Input
-                  id="divisor"
-                  type="number"
-                  min={0.0001}
-                  step={1}
-                  value={divisor}
-                  onChange={(e) =>
-                    handleDivisorChange(Number(e.target.value) || 1)
-                  }
-                  className="font-mono text-lg w-28 bg-background border-border focus:ring-primary"
-                  data-ocid="calc.input"
-                />
-                <div className="flex gap-1">
-                  {[2, 4, 5, 10].map((v) => (
-                    <Button
-                      key={v}
-                      size="sm"
-                      variant={divisor === v ? "default" : "outline"}
-                      onClick={() => handleDivisorChange(v)}
-                      className="font-mono w-10 text-xs"
-                      data-ocid="calc.toggle"
-                    >
-                      {v}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground font-mono">
-                CPT = (Kit Price ÷ Volume) ÷ Tests per mL
-              </p>
-            </div>
-          </div>
-
-          {/* Add Reagent Form */}
-          <div className="bg-card rounded-lg border border-border p-5 space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Plus className="h-4 w-4 text-primary" />
-                <span className="font-display text-sm font-600 text-foreground uppercase tracking-widest">
-                  Add Reagent
-                </span>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={loadSample}
-                className="text-xs border-border hover:border-primary/50 hover:text-primary font-mono"
-                data-ocid="calc.secondary_button"
-              >
-                Load Sample Data
-              </Button>
             </div>
 
             <div className="grid grid-cols-1 gap-2">
               <div className="space-y-1">
+                <div className="flex items-center gap-4 mb-1">
+                  <label className="flex items-center gap-1.5 cursor-pointer select-none text-xs font-mono text-muted-foreground uppercase tracking-wider">
+                    <input
+                      type="checkbox"
+                      checked={semiAssay}
+                      onChange={(e) => {
+                        setSemiAssay(e.target.checked);
+                        if (e.target.checked) setFullyAssay(false);
+                      }}
+                      className="accent-primary w-3.5 h-3.5"
+                      data-ocid="reagent.semi_assay.checkbox"
+                    />
+                    Semi Assay
+                  </label>
+                  <label className="flex items-center gap-1.5 cursor-pointer select-none text-xs font-mono text-muted-foreground uppercase tracking-wider">
+                    <input
+                      type="checkbox"
+                      checked={fullyAssay}
+                      onChange={(e) => {
+                        setFullyAssay(e.target.checked);
+                        if (e.target.checked) setSemiAssay(false);
+                      }}
+                      className="accent-primary w-3.5 h-3.5"
+                      data-ocid="reagent.fully_assay.checkbox"
+                    />
+                    Fully Assay
+                  </label>
+                </div>
                 <Label
                   htmlFor="reagent-name"
                   className="text-muted-foreground text-xs font-mono uppercase tracking-wider"
                 >
                   Reagent Name
                 </Label>
-                <Input
-                  id="reagent-name"
-                  type="text"
-                  placeholder="e.g. Glucose Oxidase"
-                  value={formName}
-                  onChange={(e) => setFormName(e.target.value)}
-                  onKeyDown={(e) =>
-                    e.key === "Enter" && canAdd && handleAddReagent()
-                  }
-                  className="bg-background border-border focus:ring-primary font-mono text-sm"
-                  data-ocid="reagent.input"
-                />
+                {/* Autocomplete wrapper */}
+                <div ref={autocompleteWrapperRef} className="relative">
+                  <Input
+                    id="reagent-name"
+                    type="text"
+                    placeholder="e.g. Glucose Oxidase"
+                    value={formName}
+                    onChange={(e) => handleNameChange(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Escape") {
+                        setShowSuggestions(false);
+                      } else if (
+                        e.key === "Enter" &&
+                        canAdd &&
+                        !showSuggestions
+                      ) {
+                        handleAddReagent();
+                      }
+                    }}
+                    className="bg-background border-border focus:ring-primary font-mono text-sm"
+                    data-ocid="reagent.input"
+                    autoComplete="off"
+                  />
+                  {/* Suggestions dropdown */}
+                  {showSuggestions && filteredSuggestions.length > 0 && (
+                    <ul className="absolute z-50 w-full mt-1 bg-card border border-border rounded-md shadow-lg max-h-48 overflow-y-auto">
+                      {filteredSuggestions.map((suggestion) => (
+                        <li
+                          key={suggestion}
+                          onMouseDown={(e) => {
+                            // Use mousedown so blur doesn't fire first
+                            e.preventDefault();
+                            handleSuggestionClick(suggestion);
+                          }}
+                          className="px-3 py-2 text-sm font-mono cursor-pointer hover:bg-secondary/60 text-foreground"
+                        >
+                          {suggestion}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
               </div>
               <div className="grid grid-cols-3 gap-2">
                 <div className="space-y-1">
@@ -487,7 +788,7 @@ export default function App() {
                     {rows.length} reagents
                   </Badge>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                   <Button
                     size="sm"
                     variant="outline"
@@ -498,6 +799,111 @@ export default function App() {
                     <Download className="h-3.5 w-3.5" />
                     Export CSV
                   </Button>
+
+                  {/* Generate Quotation */}
+                  <Dialog open={quotationOpen} onOpenChange={setQuotationOpen}>
+                    <DialogTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={selectedRows.size === 0}
+                        className="gap-1.5 text-xs font-mono border-accent/50 text-accent hover:bg-accent/10 hover:border-accent"
+                        data-ocid="results.open_modal_button"
+                      >
+                        <FileText className="h-3.5 w-3.5" />
+                        Generate Quotation
+                        {selectedRows.size > 0 && (
+                          <Badge className="ml-1 bg-accent/20 text-accent border-none font-mono text-xs px-1.5 py-0">
+                            {selectedRows.size}
+                          </Badge>
+                        )}
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent
+                      className="bg-card border-border"
+                      data-ocid="quotation.dialog"
+                    >
+                      <DialogHeader>
+                        <DialogTitle className="font-display">
+                          Generate Quotation
+                        </DialogTitle>
+                        <DialogDescription className="text-muted-foreground text-sm">
+                          Enter customer details. The quotation PDF will open in
+                          a new window for printing or saving.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-3 py-2">
+                        <div className="space-y-1">
+                          <Label
+                            htmlFor="customer-name"
+                            className="text-xs font-mono uppercase tracking-wider text-muted-foreground"
+                          >
+                            Customer Name
+                          </Label>
+                          <Input
+                            id="customer-name"
+                            value={customerName}
+                            onChange={(e) => setCustomerName(e.target.value)}
+                            placeholder="e.g. Dr. Sharma"
+                            className="bg-background border-border focus:ring-primary font-mono"
+                            data-ocid="quotation.input"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label
+                            htmlFor="lab-name"
+                            className="text-xs font-mono uppercase tracking-wider text-muted-foreground"
+                          >
+                            Lab / Organization Name
+                          </Label>
+                          <Input
+                            id="lab-name"
+                            value={labName}
+                            onChange={(e) => setLabName(e.target.value)}
+                            placeholder="e.g. City Diagnostics"
+                            className="bg-background border-border focus:ring-primary font-mono"
+                            data-ocid="quotation.input"
+                          />
+                        </div>
+                        <div className="rounded-md bg-secondary/40 border border-border p-3 text-xs font-mono text-muted-foreground space-y-1">
+                          <p className="font-600 text-foreground text-[11px] uppercase tracking-wider mb-2">
+                            Selected Items ({selectedRows.size})
+                          </p>
+                          {rows
+                            .filter((_, i) => selectedRows.has(i))
+                            .map((r, i) => (
+                              <p key={r.name + String(i)}>
+                                {i + 1}. {r.name} — CPT: ₹{r.cpt.toFixed(4)}
+                              </p>
+                            ))}
+                        </div>
+                        {exclusiveGst && (
+                          <p className="text-xs font-mono text-amber-500/80 bg-amber-500/10 border border-amber-500/20 rounded px-3 py-2">
+                            GST note will be included: &quot;All items are
+                            exclusive of GST.&quot;
+                          </p>
+                        )}
+                      </div>
+                      <DialogFooter>
+                        <Button
+                          variant="outline"
+                          onClick={() => setQuotationOpen(false)}
+                          className="font-mono text-xs"
+                          data-ocid="quotation.cancel_button"
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          onClick={handleGenerateQuotation}
+                          className="font-mono text-xs bg-accent text-accent-foreground hover:bg-accent/90"
+                          data-ocid="quotation.confirm_button"
+                        >
+                          <FileText className="h-3.5 w-3.5 mr-1" />
+                          Generate PDF
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
 
                   <Dialog open={saveOpen} onOpenChange={setSaveOpen}>
                     <DialogTrigger asChild>
@@ -567,11 +973,35 @@ export default function App() {
                 </div>
               </div>
 
+              {/* Select all hint */}
+              <p className="text-xs text-muted-foreground font-mono">
+                Check rows to include in quotation. &nbsp;
+                <button
+                  type="button"
+                  onClick={toggleSelectAll}
+                  className="text-primary underline underline-offset-2 hover:text-primary/80"
+                  data-ocid="results.toggle"
+                >
+                  {selectedRows.size === rows.length
+                    ? "Deselect all"
+                    : "Select all"}
+                </button>
+              </p>
+
               {/* Table */}
               <div className="rounded-lg border border-border overflow-hidden">
                 <Table className="lab-table" data-ocid="results.table">
                   <TableHeader>
                     <TableRow className="bg-secondary/50 hover:bg-secondary/50">
+                      <TableHead className="w-8">
+                        <Checkbox
+                          checked={
+                            rows.length > 0 && selectedRows.size === rows.length
+                          }
+                          onCheckedChange={toggleSelectAll}
+                          data-ocid="results.checkbox"
+                        />
+                      </TableHead>
                       <TableHead className="font-mono text-xs text-muted-foreground uppercase tracking-wider w-8">
                         #
                       </TableHead>
@@ -579,16 +1009,19 @@ export default function App() {
                         Reagent Name
                       </TableHead>
                       <TableHead className="font-mono text-xs text-muted-foreground uppercase tracking-wider text-right">
-                        Kit Price (₹)
+                        Kit Price (₹) <span className="text-primary/60">✎</span>
                       </TableHead>
                       <TableHead className="font-mono text-xs text-muted-foreground uppercase tracking-wider text-right">
-                        Volume (ml)
+                        Volume (ml) <span className="text-primary/60">✎</span>
                       </TableHead>
                       <TableHead className="font-mono text-xs text-muted-foreground uppercase tracking-wider text-right">
-                        Tests/mL
+                        Tests/mL <span className="text-primary/60">✎</span>
+                      </TableHead>
+                      <TableHead className="font-mono text-xs text-primary/80 uppercase tracking-wider text-right">
+                        Total Tests
                       </TableHead>
                       <TableHead className="font-mono text-xs text-muted-foreground uppercase tracking-wider text-right">
-                        ML Cost (₹)
+                        ML Cost (₹) <span className="text-primary/60">✎</span>
                       </TableHead>
                       <TableHead className="w-10" />
                       <TableHead className="font-mono text-xs text-accent uppercase tracking-wider text-right">
@@ -599,27 +1032,93 @@ export default function App() {
                   <TableBody>
                     {rows.map((row, i) => (
                       <TableRow
-                        key={`${row.name}-${i}`}
-                        className="hover:bg-secondary/30 transition-colors"
-                        data-ocid="results.row"
+                        key={"$row.name-$i"}
+                        className={`hover:bg-secondary/30 transition-colors $
+                          selectedRows.has(i) ? "bg-accent/5" : ""`}
+                        data-ocid={"results.row.$i + 1"}
                       >
+                        <TableCell className="p-2">
+                          <Checkbox
+                            checked={selectedRows.has(i)}
+                            onCheckedChange={() => toggleRowSelection(i)}
+                            data-ocid={"results.checkbox.$i + 1"}
+                          />
+                        </TableCell>
                         <TableCell className="font-mono text-xs text-muted-foreground">
                           {i + 1}
                         </TableCell>
                         <TableCell className="font-sans text-sm text-foreground">
                           {row.name}
                         </TableCell>
-                        <TableCell className="font-mono text-sm text-right tabular-nums">
-                          ₹{row.price.toFixed(4)}
+                        {/* Kit Price */}
+                        <TableCell className="p-1">
+                          <div className="relative flex items-center justify-end">
+                            <span className="absolute left-2 text-xs text-muted-foreground pointer-events-none select-none">
+                              ₹
+                            </span>
+                            <Input
+                              type="number"
+                              step="any"
+                              min={0}
+                              value={row.price}
+                              onChange={(e) =>
+                                handleCellChange(i, "price", e.target.value)
+                              }
+                              className="pl-5 pr-2 py-1 h-7 w-28 text-right font-mono text-sm tabular-nums bg-transparent border-transparent focus:border-border focus:bg-background transition-colors"
+                              data-ocid="results.input"
+                            />
+                          </div>
                         </TableCell>
-                        <TableCell className="font-mono text-sm text-right tabular-nums">
-                          {row.volume.toFixed(4)}
+                        {/* Volume */}
+                        <TableCell className="p-1">
+                          <Input
+                            type="number"
+                            step="any"
+                            min={0}
+                            value={row.volume}
+                            onChange={(e) =>
+                              handleCellChange(i, "volume", e.target.value)
+                            }
+                            className="pr-2 py-1 h-7 w-24 text-right font-mono text-sm tabular-nums bg-transparent border-transparent focus:border-border focus:bg-background transition-colors"
+                            data-ocid="results.input"
+                          />
                         </TableCell>
-                        <TableCell className="font-mono text-sm text-right tabular-nums">
-                          {row.testsPerMl}
+                        {/* Tests/mL */}
+                        <TableCell className="p-1">
+                          <Input
+                            type="number"
+                            step="any"
+                            min={0}
+                            value={row.testsPerMl}
+                            onChange={(e) =>
+                              handleCellChange(i, "testsPerMl", e.target.value)
+                            }
+                            className="pr-2 py-1 h-7 w-20 text-right font-mono text-sm tabular-nums bg-transparent border-transparent focus:border-border focus:bg-background transition-colors"
+                            data-ocid="results.input"
+                          />
                         </TableCell>
-                        <TableCell className="font-mono text-sm text-right tabular-nums text-muted-foreground">
-                          ₹{row.mlCost.toFixed(4)}
+                        {/* Total Tests */}
+                        <TableCell className="text-right font-mono text-sm tabular-nums font-600 text-primary/90 pr-4">
+                          {(row.volume * row.testsPerMl).toFixed(2)}
+                        </TableCell>
+                        {/* ML Cost */}
+                        <TableCell className="p-1">
+                          <div className="relative flex items-center justify-end">
+                            <span className="absolute left-2 text-xs text-muted-foreground pointer-events-none select-none">
+                              ₹
+                            </span>
+                            <Input
+                              type="number"
+                              step="any"
+                              min={0}
+                              value={row.mlCost}
+                              onChange={(e) =>
+                                handleCellChange(i, "mlCost", e.target.value)
+                              }
+                              className="pl-5 pr-2 py-1 h-7 w-28 text-right font-mono text-sm tabular-nums bg-transparent border-transparent focus:border-border focus:bg-background transition-colors text-muted-foreground"
+                              data-ocid="results.input"
+                            />
+                          </div>
                         </TableCell>
                         <TableCell className="text-right">
                           <Button
@@ -627,7 +1126,7 @@ export default function App() {
                             variant="ghost"
                             onClick={() => handleDeleteRow(i)}
                             className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                            data-ocid="results.delete_button"
+                            data-ocid={"results.delete_button.$i + 1"}
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </Button>
@@ -643,23 +1142,79 @@ export default function App() {
                 </Table>
               </div>
 
-              {/* Summary Stats */}
-              <div className="grid grid-cols-3 gap-4">
-                {stats.map((stat) => (
-                  <div
-                    key={stat.key}
-                    className="bg-card border border-border rounded-lg p-4 space-y-0.5"
-                    data-ocid="results.card"
+              {/* GST & Quotation Exclusion Checkboxes */}
+              <div className="space-y-2 pt-2 pb-1">
+                {/* Exclusive GST */}
+                <div className="flex items-center gap-3">
+                  <Checkbox
+                    id="exclusive-gst"
+                    checked={exclusiveGst}
+                    onCheckedChange={(v) => setExclusiveGst(!!v)}
+                    data-ocid="gst.checkbox"
+                  />
+                  <Label
+                    htmlFor="exclusive-gst"
+                    className="text-sm font-mono cursor-pointer select-none"
                   >
-                    <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider">
-                      {stat.label}
-                    </p>
-                    <p className="font-mono text-xl font-700 text-accent tabular-nums">
-                      ₹{stat.value.toFixed(4)}
-                    </p>
-                    <p className="text-xs text-muted-foreground">{stat.hint}</p>
+                    Exclusive GST
+                  </Label>
+                  {exclusiveGst && (
+                    <span className="text-xs text-amber-500/80 font-mono bg-amber-500/10 border border-amber-500/20 rounded px-2 py-0.5">
+                      All items are exclusive of GST
+                    </span>
+                  )}
+                </div>
+
+                {/* Quotation column exclusions */}
+                <div className="pl-1 pt-1 space-y-1">
+                  <p className="text-xs text-muted-foreground font-mono uppercase tracking-wider mb-1.5">
+                    Exclude from quotation PDF:
+                  </p>
+                  <div className="flex flex-wrap gap-x-6 gap-y-2">
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="exclude-tests-per-ml"
+                        checked={excludeTestsPerMl}
+                        onCheckedChange={(v) => setExcludeTestsPerMl(!!v)}
+                        data-ocid="exclude.testsperml.checkbox"
+                      />
+                      <Label
+                        htmlFor="exclude-tests-per-ml"
+                        className="text-sm font-mono cursor-pointer select-none"
+                      >
+                        Tests/mL
+                      </Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="exclude-total-tests"
+                        checked={excludeTotalTests}
+                        onCheckedChange={(v) => setExcludeTotalTests(!!v)}
+                        data-ocid="exclude.totaltests.checkbox"
+                      />
+                      <Label
+                        htmlFor="exclude-total-tests"
+                        className="text-sm font-mono cursor-pointer select-none"
+                      >
+                        Total Tests
+                      </Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="exclude-ml-cost"
+                        checked={excludeMlCost}
+                        onCheckedChange={(v) => setExcludeMlCost(!!v)}
+                        data-ocid="exclude.mlcost.checkbox"
+                      />
+                      <Label
+                        htmlFor="exclude-ml-cost"
+                        className="text-sm font-mono cursor-pointer select-none"
+                      >
+                        ML Cost
+                      </Label>
+                    </div>
                   </div>
-                ))}
+                </div>
               </div>
             </motion.section>
           )}
@@ -714,15 +1269,14 @@ export default function App() {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.05 }}
                   className="flex items-center justify-between gap-3 bg-card border border-border rounded-lg px-4 py-3 hover:border-primary/40 transition-colors group"
-                  data-ocid={`sessions.item.${i + 1}`}
+                  data-ocid={"sessions.item.$i + 1"}
                 >
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-sans text-foreground truncate">
                       {session.name}
                     </p>
                     <p className="text-xs font-mono text-muted-foreground">
-                      {session.reagents.length} reagents · divisor{" "}
-                      {session.divisor}
+                      {session.reagents.length} reagents
                     </p>
                   </div>
                   <div className="flex gap-2 shrink-0">
