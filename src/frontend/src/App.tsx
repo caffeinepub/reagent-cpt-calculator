@@ -56,109 +56,179 @@ interface ParsedRow {
 const CONTACT_NUMBER = "9289920091";
 
 // ── Built-in clinical reagents list ───────────────────────────────────────
-const BUILTIN_REAGENTS = [
-  "Glucose",
-  "Urea",
-  "Creatinine",
-  "Uric Acid",
-  "Cholesterol",
-  "Triglycerides",
-  "HDL Cholesterol",
-  "LDL Cholesterol",
-  "VLDL Cholesterol",
-  "Total Protein",
+const BUILTIN_REAGENTS: string[] = [
+  "ADA- Adenosine Deaminase with calibrator",
   "Albumin",
-  "Globulin",
-  "Bilirubin Total",
-  "Bilirubin Direct",
-  "Bilirubin Indirect",
-  "SGOT (AST)",
-  "SGPT (ALT)",
   "Alkaline Phosphatase",
-  "GGT",
-  "LDH",
-  "Amylase",
-  "Lipase",
-  "Calcium",
-  "Phosphorus",
-  "Sodium",
-  "Potassium",
-  "Chloride",
+  "Alpha Amylase",
+  "Ammonia",
+  "ACE- Angiotensin Converting Enzyme",
   "Bicarbonate",
+  "Bilirubin (T & D)",
+  "Calcium",
+  "Chloride",
+  "Cholesterol",
+  "Cholinesterase",
+  "CK-MB",
+  "CK-NAC",
+  "Creatinine (kin.)",
+  "Creatinine (Enzymatic)",
+  "Creatinine (kin.) Single Reagent",
+  "Direct HDL With Calibrators",
+  "Direct LDL With Calibrators",
+  "Fructosamine",
+  "Gamma GT",
+  "Glucose",
+  "Haemo GB",
+  "Homocysteine with calibrators",
+  "Inorganic Phosphorus",
   "Iron",
-  "TIBC",
-  "Ferritin",
-  "Hemoglobin",
-  "HbA1c",
-  "ESR",
-  "CRP",
-  "TSH",
-  "T3",
-  "T4",
-  "Free T3",
-  "Free T4",
-  "Cortisol",
-  "Insulin",
-  "FSH",
-  "LH",
-  "Prolactin",
-  "Testosterone",
-  "Estradiol",
-  "Progesterone",
-  "Beta HCG",
-  "PSA Total",
-  "PSA Free",
-  "CEA",
-  "AFP",
-  "CA 125",
-  "CA 19-9",
-  "CA 15-3",
-  "Vitamin D",
-  "Vitamin B12",
-  "Folic Acid",
+  "Lactate",
+  "LDH",
+  "Lipase",
   "Magnesium",
-  "Zinc",
-  "Copper",
-  "Homocysteine",
-  "Fibrinogen",
-  "D-Dimer",
-  "PT",
-  "APTT",
-  "INR",
-  "Platelet Count",
-  "WBC Count",
-  "RBC Count",
-  "Hematocrit",
-  "MCV",
-  "MCH",
-  "MCHC",
-  "RDW",
-  "Neutrophils",
-  "Lymphocytes",
-  "Monocytes",
-  "Eosinophils",
-  "Basophils",
-  "Blood Culture",
-  "Urine Culture",
-  "Stool Culture",
-  "Sensitivity Testing",
-  "HIV",
-  "HBsAg",
-  "Anti-HCV",
-  "VDRL",
-  "Widal Test",
-  "Dengue NS1",
-  "Dengue IgM",
-  "Dengue IgG",
-  "Malaria Antigen",
-  "Typhoid IgM",
-  "ANA",
-  "Anti-dsDNA",
-  "RF",
-  "ASO",
-  "Complement C3",
-  "Complement C4",
+  "Micro Protein",
+  "Pyruvate",
+  "SGOT",
+  "SGPT",
+  "Total Bile Acids",
+  "Total Protein",
+  "Triglycerides",
+  "TIBC",
+  "Urea (Kinetic)",
+  "Uric Acid",
+  "Alpha-1- Macroglobulin with Cal",
+  "Anti CCP",
+  "Apo A1- With Calibrator",
+  "Apo B - With Calibrator",
+  "Apo E - With Calibrator",
+  "ASO - With Calibrator",
+  "Beta-2-Microglobulin - With Cal",
+  "C3 - With Calibrator",
+  "C4 - With Calibrator",
+  "CRP - With Calibrator",
+  "Cystanin C - With Calibrator",
+  "D-Dimer - With Calibrator",
+  "Fertiitn Kit",
+  "HbA1C(Direct) - Reagents",
+  "HbA1C - Calibrator",
+  "Hs-CRP - With Calibrator",
+  "IgA - With Calibrator",
+  "IgE - With Calibrator",
+  "IgG- With Calibrator",
+  "IgM - With Calibrator",
+  "Lipoprotein (a) - With Calibrator",
+  "Micro Albumin Urea with Calibrator",
+  "Pre-Albumin - With Calibrator",
+  "Procalcitonin - With Calibrator",
+  "Retinol Binding Protein - With Cal",
+  "RF - With Calibrator",
+  "ASO(Slide)",
+  "CRP (Slide)",
+  "RF (Slide)",
+  "RPR (Slide)",
+  "CombiWidal - S",
+  "CombiWidal - OH",
+  "CLONE ANTI ABD (Blended)",
+  "Multical",
+  "Biochemistry QC (Norm & Path)",
+  "Ammonia vials",
+  "ALP Monovial",
+  "Alpha Amylase Monovial",
+  "Bicarbonate monovials",
+  "Calcium Monovials",
+  "Chloride Monovials",
+  "Phosphorus Monovials",
+  "Potassium Monovials",
+  "Sodium Monovials",
 ];
+
+const REAGENT_VOLUMES: Record<string, number> = {
+  "ADA- Adenosine Deaminase with calibrator": 30,
+  Albumin: 100,
+  "Alkaline Phosphatase": 100,
+  "Alpha Amylase": 20,
+  Ammonia: 25,
+  "ACE- Angiotensin Converting Enzyme": 20,
+  Bicarbonate: 20,
+  "Bilirubin (T & D)": 100,
+  Calcium: 100,
+  Chloride: 100,
+  Cholesterol: 100,
+  Cholinesterase: 100,
+  "CK-MB": 20,
+  "CK-NAC": 20,
+  "Creatinine (kin.)": 100,
+  "Creatinine (Enzymatic)": 100,
+  "Creatinine (kin.) Single Reagent": 100,
+  "Direct HDL With Calibrators": 40,
+  "Direct LDL With Calibrators": 40,
+  Fructosamine: 20,
+  "Gamma GT": 100,
+  Glucose: 500,
+  "Haemo GB": 1000,
+  "Homocysteine with calibrators": 30,
+  "Inorganic Phosphorus": 100,
+  Iron: 100,
+  Lactate: 20,
+  LDH: 50,
+  Lipase: 24,
+  Magnesium: 100,
+  "Micro Protein": 100,
+  Pyruvate: 50,
+  SGOT: 100,
+  SGPT: 100,
+  "Total Bile Acids": 20,
+  "Total Protein": 100,
+  Triglycerides: 100,
+  TIBC: 40,
+  "Urea (Kinetic)": 100,
+  "Uric Acid": 100,
+  "Alpha-1- Macroglobulin with Cal": 40,
+  "Anti CCP": 20,
+  "Apo A1- With Calibrator": 40,
+  "Apo B - With Calibrator": 40,
+  "Apo E - With Calibrator": 40,
+  "ASO - With Calibrator": 50,
+  "Beta-2-Microglobulin - With Cal": 50,
+  "C3 - With Calibrator": 40,
+  "C4 - With Calibrator": 40,
+  "CRP - With Calibrator": 50,
+  "Cystanin C - With Calibrator": 50,
+  "D-Dimer - With Calibrator": 40,
+  "Fertiitn Kit": 40,
+  "HbA1C(Direct) - Reagents": 40,
+  "HbA1C - Calibrator": 4,
+  "Hs-CRP - With Calibrator": 50,
+  "IgA - With Calibrator": 40,
+  "IgE - With Calibrator": 40,
+  "IgG- With Calibrator": 40,
+  "IgM - With Calibrator": 40,
+  "Lipoprotein (a) - With Calibrator": 50,
+  "Micro Albumin Urea with Calibrator": 50,
+  "Pre-Albumin - With Calibrator": 40,
+  "Procalcitonin - With Calibrator": 40,
+  "Retinol Binding Protein - With Cal": 40,
+  "RF - With Calibrator": 50,
+  "ASO(Slide)": 100,
+  "CRP (Slide)": 100,
+  "RF (Slide)": 100,
+  "RPR (Slide)": 50,
+  "CombiWidal - S": 20,
+  "CombiWidal - OH": 20,
+  "CLONE ANTI ABD (Blended)": 30,
+  Multical: 12,
+  "Biochemistry QC (Norm & Path)": 10,
+  "Ammonia vials": 10,
+  "ALP Monovial": 25,
+  "Alpha Amylase Monovial": 10,
+  "Bicarbonate monovials": 10,
+  "Calcium Monovials": 25,
+  "Chloride Monovials": 25,
+  "Phosphorus Monovials": 25,
+  "Potassium Monovials": 25,
+  "Sodium Monovials": 25,
+};
 
 // ── Export CSV ─────────────────────────────────────────────────────────────
 function exportCSV(rows: ParsedRow[], showMrp = false) {
@@ -205,6 +275,7 @@ function generateQuotationPDF(
   excludeTotalTests: boolean,
   excludeMlCost: boolean,
   excludeMrp = false,
+  excludeCpt = false,
   showMrpCol = false,
 ) {
   const date = new Date().toLocaleDateString("en-IN", {
@@ -231,7 +302,9 @@ function generateQuotationPDF(
     ...(!excludeMlCost
       ? [`<th style="text-align:right;">ML Cost (&#8377;)</th>`]
       : []),
-    `<th style="text-align:right;">CPT (&#8377;)</th>`,
+    ...(!excludeCpt
+      ? [`<th style="text-align:right;">CPT (&#8377;)</th>`]
+      : []),
   ].join("");
 
   const itemsHTML = selectedRows
@@ -246,7 +319,7 @@ function generateQuotationPDF(
         ${!excludeTestsPerMl ? `<td style="padding:8px 10px;border:1px solid #ddd;text-align:right;">${row.testsPerMl}</td>` : ""}
         ${!excludeTotalTests ? `<td style="padding:8px 10px;border:1px solid #ddd;text-align:right;font-weight:600;">${(row.volume * row.testsPerMl).toFixed(2)}</td>` : ""}
         ${!excludeMlCost ? `<td style="padding:8px 10px;border:1px solid #ddd;text-align:right;">&#8377;${row.mlCost.toFixed(4)}</td>` : ""}
-        <td style="padding:8px 10px;border:1px solid #ddd;text-align:right;font-weight:600;">&#8377;${row.cpt.toFixed(4)}</td>
+        ${!excludeCpt ? `<td style="padding:8px 10px;border:1px solid #ddd;text-align:right;font-weight:600;">&#8377;${row.cpt.toFixed(4)}</td>` : ""}
       </tr>`,
     )
     .join("");
@@ -358,6 +431,7 @@ export default function App() {
   const [excludeTotalTests, setExcludeTotalTests] = useState(false);
   const [excludeMlCost, setExcludeMlCost] = useState(false);
   const [excludeMrp, setExcludeMrp] = useState(false);
+  const [excludeCpt, setExcludeCpt] = useState(false);
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
   const [quotationOpen, setQuotationOpen] = useState(false);
   const [customerName, setCustomerName] = useState("");
@@ -419,6 +493,10 @@ export default function App() {
     setFormName(name);
     setShowSuggestions(false);
     setFilteredSuggestions([]);
+    const vol = REAGENT_VOLUMES[name];
+    if (vol !== undefined) {
+      setFormVolume(String(vol));
+    }
   };
 
   const handleAddReagent = () => {
@@ -562,6 +640,7 @@ export default function App() {
       excludeTotalTests,
       excludeMlCost,
       excludeMrp,
+      excludeCpt,
       showMrp,
     );
     setQuotationOpen(false);
@@ -680,6 +759,20 @@ export default function App() {
                     placeholder="e.g. Glucose Oxidase"
                     value={formName}
                     onChange={(e) => handleNameChange(e.target.value)}
+                    onFocus={() => {
+                      const existingNames = rows.map((r) => r.name);
+                      const combined = Array.from(
+                        new Set([...BUILTIN_REAGENTS, ...existingNames]),
+                      );
+                      const lower = formName.toLowerCase();
+                      const matches = lower
+                        ? combined.filter((n) =>
+                            n.toLowerCase().includes(lower),
+                          )
+                        : combined;
+                      setFilteredSuggestions(matches);
+                      setShowSuggestions(matches.length > 0);
+                    }}
                     onKeyDown={(e) => {
                       if (e.key === "Escape") {
                         setShowSuggestions(false);
@@ -1320,6 +1413,20 @@ export default function App() {
                         className="text-sm font-mono cursor-pointer select-none"
                       >
                         MRP
+                      </Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="exclude-cpt"
+                        checked={excludeCpt}
+                        onCheckedChange={(v) => setExcludeCpt(!!v)}
+                        data-ocid="exclude.cpt.checkbox"
+                      />
+                      <Label
+                        htmlFor="exclude-cpt"
+                        className="text-sm font-mono cursor-pointer select-none"
+                      >
+                        CPT
                       </Label>
                     </div>
                   </div>
