@@ -231,6 +231,93 @@ const REAGENT_VOLUMES: Record<string, number> = {
   "Sodium Monovials": 25,
 };
 
+// ── Reagent default prices (Offer Price & MRP) ────────────────────────────
+const REAGENT_PRICES: Record<string, { offerPrice: number; mrp: number }> = {
+  "ADA- Adenosine Deaminase with calibrator": { offerPrice: 3500, mrp: 8500 },
+  Albumin: { offerPrice: 250, mrp: 500 },
+  "Alkaline Phosphatase": { offerPrice: 1100, mrp: 2400 },
+  "Alpha Amylase": { offerPrice: 1400, mrp: 3250 },
+  Ammonia: { offerPrice: 3500, mrp: 8000 },
+  "ACE- Angiotensin Converting Enzyme": { offerPrice: 8500, mrp: 21700 },
+  Bicarbonate: { offerPrice: 2500, mrp: 7500 },
+  "Bilirubin (T & D)": { offerPrice: 307, mrp: 950 },
+  Calcium: { offerPrice: 630, mrp: 2000 },
+  Chloride: { offerPrice: 470, mrp: 2200 },
+  Cholesterol: { offerPrice: 750, mrp: 2000 },
+  Cholinesterase: { offerPrice: 6270, mrp: 13500 },
+  "CK-MB": { offerPrice: 1880, mrp: 4000 },
+  "CK-NAC": { offerPrice: 1500, mrp: 3000 },
+  "Creatinine (kin.)": { offerPrice: 350, mrp: 900 },
+  "Creatinine (Enzymatic)": { offerPrice: 3500, mrp: 10500 },
+  "Direct HDL With Calibrators": { offerPrice: 1646, mrp: 4200 },
+  "Direct LDL With Calibrators": { offerPrice: 2258, mrp: 6100 },
+  Fructosamine: { offerPrice: 4705, mrp: 9200 },
+  "Gamma GT": { offerPrice: 2000, mrp: 5000 },
+  Glucose: { offerPrice: 565, mrp: 1200 },
+  "Haemo GB": { offerPrice: 204, mrp: 580 },
+  "Homocysteine with calibrators": { offerPrice: 14850, mrp: 40000 },
+  "Inorganic Phosphorus": { offerPrice: 627, mrp: 1700 },
+  Iron: { offerPrice: 4000, mrp: 9000 },
+  Lactate: { offerPrice: 2675, mrp: 5900 },
+  LDH: { offerPrice: 1400, mrp: 5500 },
+  Lipase: { offerPrice: 2500, mrp: 5400 },
+  Magnesium: { offerPrice: 940, mrp: 2400 },
+  "Micro Protein": { offerPrice: 940, mrp: 2000 },
+  Pyruvate: { offerPrice: 5645, mrp: 13500 },
+  SGOT: { offerPrice: 745, mrp: 2000 },
+  SGPT: { offerPrice: 745, mrp: 2000 },
+  "Total Bile Acids": { offerPrice: 10260, mrp: 35000 },
+  "Total Protein": { offerPrice: 250, mrp: 550 },
+  Triglycerides: { offerPrice: 1570, mrp: 3200 },
+  TIBC: { offerPrice: 5150, mrp: 11000 },
+  "Urea (Kinetic)": { offerPrice: 745, mrp: 1900 },
+  "Uric Acid": { offerPrice: 800, mrp: 2000 },
+  "Alpha-1- Macroglobulin with Cal": { offerPrice: 16500, mrp: 19500 },
+  "Anti CCP": { offerPrice: 14500, mrp: 32500 },
+  "Apo A1- With Calibrator": { offerPrice: 6750, mrp: 10200 },
+  "Apo B - With Calibrator": { offerPrice: 6750, mrp: 10200 },
+  "Apo E - With Calibrator": { offerPrice: 10080, mrp: 18000 },
+  "ASO - With Calibrator": { offerPrice: 3000, mrp: 6500 },
+  "Beta-2-Microglobulin - With Cal": { offerPrice: 17920, mrp: 21500 },
+  "C3 - With Calibrator": { offerPrice: 6660, mrp: 11200 },
+  "C4 - With Calibrator": { offerPrice: 6660, mrp: 11200 },
+  "CRP - With Calibrator": { offerPrice: 1780, mrp: 5450 },
+  "Cystanin C - With Calibrator": { offerPrice: 12150, mrp: 22000 },
+  "D-Dimer - With Calibrator": { offerPrice: 21600, mrp: 45000 },
+  "Fertiitn Kit": { offerPrice: 11875, mrp: 32000 },
+  "HbA1C(Direct) - Reagents": { offerPrice: 7500, mrp: 32500 },
+  "HbA1C - Calibrator": { offerPrice: 3500, mrp: 7800 },
+  "Hs-CRP - With Calibrator": { offerPrice: 5400, mrp: 20500 },
+  "IgA - With Calibrator": { offerPrice: 7705, mrp: 16500 },
+  "IgE - With Calibrator": { offerPrice: 9760, mrp: 20500 },
+  "IgG- With Calibrator": { offerPrice: 7705, mrp: 16500 },
+  "IgM - With Calibrator": { offerPrice: 7705, mrp: 16500 },
+  "Lipoprotein (a) - With Calibrator": { offerPrice: 10275, mrp: 33500 },
+  "Micro Albumin Urea with Calibrator": { offerPrice: 3950, mrp: 9000 },
+  "Pre-Albumin - With Calibrator": { offerPrice: 7705, mrp: 19500 },
+  "Procalcitonin - With Calibrator": { offerPrice: 38000, mrp: 53760 },
+  "Retinol Binding Protein - With Cal": { offerPrice: 10275, mrp: 25200 },
+  "RF - With Calibrator": { offerPrice: 2830, mrp: 5650 },
+  "ASO(Slide)": { offerPrice: 650, mrp: 1350 },
+  "CRP (Slide)": { offerPrice: 600, mrp: 1250 },
+  "RF (Slide)": { offerPrice: 600, mrp: 1300 },
+  "RPR (Slide)": { offerPrice: 345, mrp: 675 },
+  "CombiWidal - S": { offerPrice: 423, mrp: 850 },
+  "CombiWidal - OH": { offerPrice: 423, mrp: 850 },
+  "CLONE ANTI ABD (Blended)": { offerPrice: 500, mrp: 1000 },
+  Multical: { offerPrice: 7500, mrp: 13000 },
+  "Biochemistry QC (Norm & Path)": { offerPrice: 3150, mrp: 6000 },
+  "Ammonia vials": { offerPrice: 1350, mrp: 3000 },
+  "ALP Monovial": { offerPrice: 425, mrp: 1000 },
+  "Alpha Amylase Monovial": { offerPrice: 721, mrp: 1700 },
+  "Bicarbonate monovials": { offerPrice: 1570, mrp: 3500 },
+  "Calcium Monovials": { offerPrice: 313, mrp: 700 },
+  "Chloride Monovials": { offerPrice: 285, mrp: 600 },
+  "Phosphorus Monovials": { offerPrice: 315, mrp: 500 },
+  "Potassium Monovials": { offerPrice: 375, mrp: 875 },
+  "Sodium Monovials": { offerPrice: 470, mrp: 950 },
+};
+
 // ── Export CSV ─────────────────────────────────────────────────────────────
 function exportCSV(rows: ParsedRow[], showMrp = false) {
   const header = [
@@ -247,13 +334,13 @@ function exportCSV(rows: ParsedRow[], showMrp = false) {
     .map((r) =>
       [
         `"${r.name.replace(/"/g, '""')}"`,
-        ...(showMrp ? [r.mrp?.toFixed(4) ?? ""] : []),
-        r.price.toFixed(4),
-        r.volume.toFixed(4),
+        ...(showMrp ? [r.mrp?.toFixed(1) ?? ""] : []),
+        r.price.toFixed(1),
+        r.volume.toFixed(1),
         r.testsPerMl,
-        (r.volume * r.testsPerMl).toFixed(2),
-        r.mlCost.toFixed(4),
-        r.cpt.toFixed(4),
+        (r.volume * r.testsPerMl).toFixed(0),
+        r.mlCost.toFixed(2),
+        r.cpt.toFixed(2),
       ].join(","),
     )
     .join("\n");
@@ -314,13 +401,13 @@ function generateQuotationPDF(
       <tr>
         <td style="padding:8px 10px;border:1px solid #ddd;text-align:center;">${i + 1}</td>
         <td style="padding:8px 10px;border:1px solid #ddd;">${row.name}</td>
-        <td style="padding:8px 10px;border:1px solid #ddd;text-align:right;">${row.volume.toFixed(2)} ml</td>
-        ${showMrpCol && !excludeMrp ? `<td style="padding:8px 10px;border:1px solid #ddd;text-align:right;">&#8377;${row.mrp != null ? row.mrp.toFixed(2) : "-"}</td>` : ""}
-        <td style="padding:8px 10px;border:1px solid #ddd;text-align:right;">&#8377;${row.price.toFixed(2)}</td>
+        <td style="padding:8px 10px;border:1px solid #ddd;text-align:right;">${row.volume.toFixed(1)} ml</td>
+        ${showMrpCol && !excludeMrp ? `<td style="padding:8px 10px;border:1px solid #ddd;text-align:right;">&#8377;${row.mrp != null ? row.mrp.toFixed(1) : "-"}</td>` : ""}
+        <td style="padding:8px 10px;border:1px solid #ddd;text-align:right;">&#8377;${row.price.toFixed(1)}</td>
         ${!excludeTestsPerMl ? `<td style="padding:8px 10px;border:1px solid #ddd;text-align:right;">${row.testsPerMl}</td>` : ""}
-        ${!excludeTotalTests ? `<td style="padding:8px 10px;border:1px solid #ddd;text-align:right;font-weight:600;">${(row.volume * row.testsPerMl).toFixed(2)}</td>` : ""}
-        ${!excludeMlCost ? `<td style="padding:8px 10px;border:1px solid #ddd;text-align:right;">&#8377;${row.mlCost.toFixed(4)}</td>` : ""}
-        ${!excludeCpt ? `<td style="padding:8px 10px;border:1px solid #ddd;text-align:right;font-weight:600;">&#8377;${row.cpt.toFixed(4)}</td>` : ""}
+        ${!excludeTotalTests ? `<td style="padding:8px 10px;border:1px solid #ddd;text-align:right;font-weight:600;">${(row.volume * row.testsPerMl).toFixed(0)}</td>` : ""}
+        ${!excludeMlCost ? `<td style="padding:8px 10px;border:1px solid #ddd;text-align:right;">&#8377;${row.mlCost.toFixed(2)}</td>` : ""}
+        ${!excludeCpt ? `<td style="padding:8px 10px;border:1px solid #ddd;text-align:right;font-weight:600;">&#8377;${row.cpt.toFixed(2)}</td>` : ""}
       </tr>`,
     )
     .join("");
@@ -451,8 +538,8 @@ function generatePOBPDF(
       <tr>
         <td style="padding:8px 10px;border:1px solid #ddd;text-align:center;">${i + 1}</td>
         <td style="padding:8px 10px;border:1px solid #ddd;">${row.name}</td>
-        <td style="padding:8px 10px;border:1px solid #ddd;text-align:right;">${row.volume.toFixed(2)} ml</td>
-        <td style="padding:8px 10px;border:1px solid #ddd;text-align:right;">&#8377;${row.price.toFixed(2)}</td>
+        <td style="padding:8px 10px;border:1px solid #ddd;text-align:right;">${row.volume.toFixed(1)} ml</td>
+        <td style="padding:8px 10px;border:1px solid #ddd;text-align:right;">&#8377;${row.price.toFixed(1)}</td>
         <td style="padding:8px 10px;border:1px solid #ddd;text-align:center;">${quantities[i] ?? 1}</td>
         <td style="padding:8px 10px;border:1px solid #ddd;text-align:right;font-weight:600;">&#8377;${(row.price * (quantities[i] ?? 1)).toFixed(2)}</td>
       </tr>`,
@@ -464,8 +551,6 @@ function generatePOBPDF(
        <tr><td colspan="5" style="text-align:right;padding:8px 10px;border:1px solid #ddd;">GST (5%):</td><td style="padding:8px 10px;border:1px solid #ddd;text-align:right;">&#8377;${gstAmount.toFixed(2)}</td></tr>
        <tr><td colspan="5" style="text-align:right;padding:8px 10px;border:1px solid #ddd;font-weight:700;font-size:14px;">Grand Total:</td><td style="padding:8px 10px;border:1px solid #ddd;text-align:right;font-weight:700;font-size:14px;">&#8377;${grandTotal.toFixed(2)}</td></tr>`
     : `<tr><td colspan="5" style="text-align:right;padding:8px 10px;border:1px solid #ddd;font-weight:700;font-size:14px;">Total:</td><td style="padding:8px 10px;border:1px solid #ddd;text-align:right;font-weight:700;font-size:14px;">&#8377;${grandTotal.toFixed(2)}</td></tr>`;
-
-  const logoUrl = `${window.location.origin}/assets/uploads/zamco-med-1.png`;
 
   const html = `<!DOCTYPE html>
 <html>
@@ -490,7 +575,7 @@ function generatePOBPDF(
     th:nth-child(5) { text-align: center; }
     tr:nth-child(even) td { background: #f5f8ff; }
     .sign-section { margin-top: 40px; display: flex; gap: 40px; }
-    .sign-box { flex: 1; border: 1px solid #ccc; border-radius: 4px; padding: 12px 16px; min-height: 80px; }
+    .sign-box { flex: 1; border: 1px solid #ccc; border-radius: 4px; padding: 12px 16px; min-height: 140px; }
     .sign-box label { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 50px; }
     .footer { margin-top: 24px; font-size: 12px; color: #555; text-align: center; border-top: 1px solid #ddd; padding-top: 12px; }
     @media print { body { padding: 20px; } }
@@ -498,7 +583,7 @@ function generatePOBPDF(
 </head>
 <body>
   <div class="header">
-    <img src="${logoUrl}" alt="Zamco Medical Tech" onerror="this.style.display='none'" />
+
     <div class="header-text">
       <h1>Zamco Medical Tech Pvt Ltd</h1>
       <p>Clinical Diagnostics &amp; Reagents</p>
@@ -536,7 +621,7 @@ function generatePOBPDF(
   </table>
 
   <div class="sign-section">
-    <div class="sign-box"><label>Authorized Signatory</label></div>
+    <div class="sign-box"><label>Authorized Signatory</label><img src="${window.location.origin}/assets/uploads/sign--1.png" style="height:120px;width:auto;display:block;margin-top:4px;" /><div style="margin-top:6px;font-size:13px;font-weight:600;">Abdul Baquee</div></div>
     <div class="sign-box"><label>Customer Stamp &amp; Signature</label></div>
   </div>
 
@@ -636,6 +721,13 @@ export default function App() {
     const vol = REAGENT_VOLUMES[name];
     if (vol !== undefined) {
       setFormVolume(String(vol));
+    }
+    const prices = REAGENT_PRICES[name];
+    if (prices !== undefined) {
+      setFormPrice(String(prices.offerPrice));
+      if (showMrp) {
+        setFormMrp(String(prices.mrp));
+      }
     }
   };
 
@@ -1178,7 +1270,7 @@ export default function App() {
                             .filter((_, i) => selectedRows.has(i))
                             .map((r, i) => (
                               <p key={r.name + String(i)}>
-                                {i + 1}. {r.name} — CPT: ₹{r.cpt.toFixed(4)}
+                                {i + 1}. {r.name} — CPT: ₹{r.cpt.toFixed(2)}
                               </p>
                             ))}
                         </div>
@@ -1615,7 +1707,7 @@ export default function App() {
                         </TableCell>
                         {/* Total Tests */}
                         <TableCell className="text-right font-mono text-sm tabular-nums font-600 text-primary/90 pr-4">
-                          {(row.volume * row.testsPerMl).toFixed(2)}
+                          {(row.volume * row.testsPerMl).toFixed(0)}
                         </TableCell>
                         {/* ML Cost */}
                         <TableCell className="p-1">
@@ -1649,7 +1741,7 @@ export default function App() {
                         </TableCell>
                         <TableCell className="font-mono text-sm text-right tabular-nums font-600">
                           <span className="text-accent">
-                            ₹{row.cpt.toFixed(4)}
+                            ₹{row.cpt.toFixed(2)}
                           </span>
                         </TableCell>
                       </TableRow>
@@ -1657,6 +1749,52 @@ export default function App() {
                   </TableBody>
                 </Table>
               </div>
+
+              {/* Main Screen Total Summary */}
+              {rows.length > 0 && (
+                <div className="flex justify-end pt-2">
+                  <div className="rounded-md border border-border bg-secondary/30 px-5 py-3 min-w-[260px] space-y-1.5">
+                    <div className="flex justify-between gap-8 text-sm font-mono">
+                      <span className="text-muted-foreground">Subtotal</span>
+                      <span className="font-600 text-foreground">
+                        ₹{rows.reduce((s, r) => s + r.price, 0).toFixed(2)}
+                      </span>
+                    </div>
+                    {exclusiveGst && (
+                      <>
+                        <div className="flex justify-between gap-8 text-sm font-mono">
+                          <span className="text-amber-500/80">GST (5%)</span>
+                          <span className="text-amber-500/80">
+                            ₹
+                            {(
+                              rows.reduce((s, r) => s + r.price, 0) * 0.05
+                            ).toFixed(2)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between gap-8 text-sm font-mono border-t border-border pt-1.5">
+                          <span className="text-foreground font-700">
+                            Grand Total
+                          </span>
+                          <span className="text-primary font-700">
+                            ₹
+                            {(
+                              rows.reduce((s, r) => s + r.price, 0) * 1.05
+                            ).toFixed(2)}
+                          </span>
+                        </div>
+                      </>
+                    )}
+                    {!exclusiveGst && (
+                      <div className="flex justify-between gap-8 text-sm font-mono border-t border-border pt-1.5">
+                        <span className="text-foreground font-700">Total</span>
+                        <span className="text-primary font-700">
+                          ₹{rows.reduce((s, r) => s + r.price, 0).toFixed(2)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* GST & Quotation Exclusion Checkboxes */}
               <div className="space-y-2 pt-2 pb-1">
