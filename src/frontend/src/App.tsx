@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/table";
 import {
   ChevronRight,
+  ClipboardList,
   Download,
   FileText,
   FlaskConical,
@@ -421,6 +422,137 @@ function generateQuotationPDF(
   };
 }
 
+// ── Generate POB (Pre Order Booking) PDF via Print ─────────────────────────
+function generatePOBPDF(
+  selectedRows: ParsedRow[],
+  quantities: number[],
+  customerName: string,
+  labName: string,
+  address: string,
+  phone: string,
+  exclusiveGst: boolean,
+) {
+  const date = new Date().toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+
+  const subtotal = selectedRows.reduce(
+    (sum, row, i) => sum + row.price * (quantities[i] ?? 1),
+    0,
+  );
+  const gstAmount = exclusiveGst ? subtotal * 0.05 : 0;
+  const grandTotal = subtotal + gstAmount;
+
+  const itemsHTML = selectedRows
+    .map(
+      (row, i) => `
+      <tr>
+        <td style="padding:8px 10px;border:1px solid #ddd;text-align:center;">${i + 1}</td>
+        <td style="padding:8px 10px;border:1px solid #ddd;">${row.name}</td>
+        <td style="padding:8px 10px;border:1px solid #ddd;text-align:right;">${row.volume.toFixed(2)} ml</td>
+        <td style="padding:8px 10px;border:1px solid #ddd;text-align:right;">&#8377;${row.price.toFixed(2)}</td>
+        <td style="padding:8px 10px;border:1px solid #ddd;text-align:center;">${quantities[i] ?? 1}</td>
+        <td style="padding:8px 10px;border:1px solid #ddd;text-align:right;font-weight:600;">&#8377;${(row.price * (quantities[i] ?? 1)).toFixed(2)}</td>
+      </tr>`,
+    )
+    .join("");
+
+  const totalsHTML = exclusiveGst
+    ? `<tr><td colspan="5" style="text-align:right;padding:8px 10px;border:1px solid #ddd;font-weight:600;">Subtotal:</td><td style="padding:8px 10px;border:1px solid #ddd;text-align:right;">&#8377;${subtotal.toFixed(2)}</td></tr>
+       <tr><td colspan="5" style="text-align:right;padding:8px 10px;border:1px solid #ddd;">GST (5%):</td><td style="padding:8px 10px;border:1px solid #ddd;text-align:right;">&#8377;${gstAmount.toFixed(2)}</td></tr>
+       <tr><td colspan="5" style="text-align:right;padding:8px 10px;border:1px solid #ddd;font-weight:700;font-size:14px;">Grand Total:</td><td style="padding:8px 10px;border:1px solid #ddd;text-align:right;font-weight:700;font-size:14px;">&#8377;${grandTotal.toFixed(2)}</td></tr>`
+    : `<tr><td colspan="5" style="text-align:right;padding:8px 10px;border:1px solid #ddd;font-weight:700;font-size:14px;">Total:</td><td style="padding:8px 10px;border:1px solid #ddd;text-align:right;font-weight:700;font-size:14px;">&#8377;${grandTotal.toFixed(2)}</td></tr>`;
+
+  const logoUrl = `${window.location.origin}/assets/uploads/zamco-med-1.png`;
+
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Pre Order Booking</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 30px; color: #111; }
+    .header { background: #0d1b2a; color: white; padding: 20px 24px; display: flex; align-items: center; gap: 18px; margin-bottom: 24px; border-radius: 6px; }
+    .header img { height: 64px; width: auto; }
+    .header-text h1 { font-size: 22px; margin: 0 0 4px; color: #fff; }
+    .header-text p { margin: 0; font-size: 13px; color: #a0b4c8; }
+    .header-date { margin-left: auto; text-align: right; font-size: 13px; color: #a0b4c8; }
+    .doc-title { font-size: 28px; font-weight: 700; color: #0d1b2a; margin-bottom: 20px; letter-spacing: 0.02em; text-transform: uppercase; }
+    .customer-block { background: #f5f8ff; border-left: 4px solid #1a4f8a; padding: 12px 16px; margin-bottom: 20px; border-radius: 0 4px 4px 0; }
+    .customer-block .label { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 0.05em; }
+    .customer-block .value { font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 16px 0; }
+    th { background: #0d1b2a; color: white; padding: 9px 10px; text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+    th:not(:nth-child(2)) { text-align: right; }
+    th:first-child { text-align: center; }
+    th:nth-child(5) { text-align: center; }
+    tr:nth-child(even) td { background: #f5f8ff; }
+    .sign-section { margin-top: 40px; display: flex; gap: 40px; }
+    .sign-box { flex: 1; border: 1px solid #ccc; border-radius: 4px; padding: 12px 16px; min-height: 80px; }
+    .sign-box label { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 50px; }
+    .footer { margin-top: 24px; font-size: 12px; color: #555; text-align: center; border-top: 1px solid #ddd; padding-top: 12px; }
+    @media print { body { padding: 20px; } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <img src="${logoUrl}" alt="Zamco Medical Tech" onerror="this.style.display='none'" />
+    <div class="header-text">
+      <h1>Zamco Medical Tech Pvt Ltd</h1>
+      <p>Clinical Diagnostics &amp; Reagents</p>
+    </div>
+    <div class="header-date">
+      <div style="font-size:11px;color:#a0b4c8;text-transform:uppercase;letter-spacing:0.05em;">Date</div>
+      <div style="font-size:14px;font-weight:600;color:#fff;">${date}</div>
+    </div>
+  </div>
+
+  <div class="doc-title">Pre Order Booking</div>
+
+  <div class="customer-block">
+    <div class="label">Customer Name</div><div class="value">${customerName || "-"}</div>
+    <div class="label">Lab Name</div><div class="value">${labName || "-"}</div>
+    <div class="label">Address</div><div class="value">${(address || "-").split("\n").join("<br/>")}</div>
+    <div class="label">Phone</div><div class="value">${phone || "-"}</div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="text-align:center;width:40px;">#</th>
+        <th>Reagent Name</th>
+        <th style="text-align:right;">ML</th>
+        <th style="text-align:right;">Offer Price (&#8377;)</th>
+        <th style="text-align:center;">Qty</th>
+        <th style="text-align:right;">Total Amount (&#8377;)</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${itemsHTML}
+      ${totalsHTML}
+    </tbody>
+  </table>
+
+  <div class="sign-section">
+    <div class="sign-box"><label>Authorized Signatory</label></div>
+    <div class="sign-box"><label>Customer Stamp &amp; Signature</label></div>
+  </div>
+
+  <div class="footer">Contact: ${CONTACT_NUMBER} &nbsp;|&nbsp; Zamco Medical Tech Pvt Ltd</div>
+</body>
+</html>`;
+
+  const printWindow = window.open("", "_blank");
+  if (!printWindow) return;
+  printWindow.document.write(html);
+  printWindow.document.close();
+  printWindow.onload = () => {
+    printWindow.print();
+  };
+}
+
 // ── Main App ───────────────────────────────────────────────────────────────
 export default function App() {
   const [rows, setRows] = useState<ParsedRow[]>([]);
@@ -436,6 +568,14 @@ export default function App() {
   const [quotationOpen, setQuotationOpen] = useState(false);
   const [customerName, setCustomerName] = useState("");
   const [labName, setLabName] = useState("");
+  const [pobOpen, setPobOpen] = useState(false);
+  const [pobCustomerName, setPobCustomerName] = useState("");
+  const [pobLabName, setPobLabName] = useState("");
+  const [pobAddress, setPobAddress] = useState("");
+  const [pobPhone, setPobPhone] = useState("");
+  const [pobQuantities, setPobQuantities] = useState<Record<number, number>>(
+    {},
+  );
 
   // Add reagent form state
   const [formName, setFormName] = useState("");
@@ -517,7 +657,7 @@ export default function App() {
     setFormName("");
     setFormPrice("");
     setFormVolume("");
-    setFormTestsPerMl("");
+    setFormTestsPerMl(semiAssay ? "2" : fullyAssay ? "4" : "");
     setFormMrp("");
     setShowSuggestions(false);
   };
@@ -578,7 +718,7 @@ export default function App() {
     }));
     saveSession.mutate(
       {
-        id: "session-$Date.now()",
+        id: `session-${Date.now()}`,
         name: sessionName.trim(),
         divisor: 1,
         reagents: reagentRows,
@@ -644,6 +784,22 @@ export default function App() {
       showMrp,
     );
     setQuotationOpen(false);
+  };
+
+  const handleGeneratePOB = () => {
+    const chosen = rows.filter((_, i) => selectedRows.has(i));
+    if (chosen.length === 0) return;
+    const qtys = chosen.map((_, i) => pobQuantities[i] ?? 1);
+    generatePOBPDF(
+      chosen,
+      qtys,
+      pobCustomerName,
+      pobLabName,
+      pobAddress,
+      pobPhone,
+      exclusiveGst,
+    );
+    setPobOpen(false);
   };
 
   const canAdd =
@@ -1049,6 +1205,178 @@ export default function App() {
                         >
                           <FileText className="h-3.5 w-3.5 mr-1" />
                           Generate PDF
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+
+                  {/* Generate POB */}
+                  <Dialog
+                    open={pobOpen}
+                    onOpenChange={(open) => {
+                      setPobOpen(open);
+                      if (open) {
+                        setPobCustomerName("");
+                        setPobLabName("");
+                        setPobAddress("");
+                        setPobPhone("");
+                        const initQtys: Record<number, number> = {};
+                        let idx = 0;
+                        rows.forEach((_, i) => {
+                          if (selectedRows.has(i)) {
+                            initQtys[idx] = 1;
+                            idx++;
+                          }
+                        });
+                        setPobQuantities(initQtys);
+                      }
+                    }}
+                  >
+                    <DialogTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={selectedRows.size === 0}
+                        className="gap-1.5 text-xs font-mono border-green-400/50 text-green-400 hover:bg-green-400/10 hover:border-green-400"
+                        data-ocid="results.open_modal_button"
+                      >
+                        <ClipboardList className="h-3.5 w-3.5" />
+                        Generate POB
+                        {selectedRows.size > 0 && (
+                          <span className="ml-1 bg-green-400/20 text-green-400 rounded px-1.5 py-0 text-xs font-mono">
+                            {selectedRows.size}
+                          </span>
+                        )}
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent
+                      className="bg-card border-border max-w-lg"
+                      data-ocid="pob.dialog"
+                    >
+                      <DialogHeader>
+                        <DialogTitle className="text-foreground font-mono">
+                          Generate Pre Order Booking
+                        </DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-3 py-2">
+                        <div className="space-y-1">
+                          <Label className="text-xs text-muted-foreground font-mono uppercase tracking-wider">
+                            Customer Name
+                          </Label>
+                          <Input
+                            value={pobCustomerName}
+                            onChange={(e) => setPobCustomerName(e.target.value)}
+                            placeholder="Enter customer name"
+                            className="font-mono text-sm bg-background border-border"
+                            data-ocid="pob.input"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs text-muted-foreground font-mono uppercase tracking-wider">
+                            Lab Name
+                          </Label>
+                          <Input
+                            value={pobLabName}
+                            onChange={(e) => setPobLabName(e.target.value)}
+                            placeholder="Enter lab name"
+                            className="font-mono text-sm bg-background border-border"
+                            data-ocid="pob.input"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs text-muted-foreground font-mono uppercase tracking-wider">
+                            Address
+                          </Label>
+                          <textarea
+                            value={pobAddress}
+                            onChange={(e) => setPobAddress(e.target.value)}
+                            placeholder="Enter address"
+                            rows={3}
+                            className="w-full rounded-md border border-border bg-background px-3 py-2 font-mono text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                            data-ocid="pob.textarea"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs text-muted-foreground font-mono uppercase tracking-wider">
+                            Phone Number
+                          </Label>
+                          <Input
+                            value={pobPhone}
+                            onChange={(e) => setPobPhone(e.target.value)}
+                            placeholder="Enter phone number"
+                            className="font-mono text-sm bg-background border-border"
+                            data-ocid="pob.input"
+                          />
+                        </div>
+                        {/* Per-item quantity */}
+                        <div className="space-y-2">
+                          <Label className="text-xs text-muted-foreground font-mono uppercase tracking-wider">
+                            Item Quantities
+                          </Label>
+                          <div className="rounded-md border border-border overflow-hidden">
+                            <table className="w-full text-xs font-mono">
+                              <thead>
+                                <tr className="bg-muted/40">
+                                  <th className="px-3 py-2 text-left text-muted-foreground">
+                                    Reagent
+                                  </th>
+                                  <th className="px-3 py-2 text-right text-muted-foreground w-20">
+                                    Qty
+                                  </th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {rows
+                                  .filter((_, i) => selectedRows.has(i))
+                                  .map((row, idx) => (
+                                    <tr
+                                      key={row.name + String(idx)}
+                                      className="border-t border-border"
+                                    >
+                                      <td className="px-3 py-1.5 text-foreground">
+                                        {row.name}
+                                      </td>
+                                      <td className="px-3 py-1.5">
+                                        <input
+                                          type="number"
+                                          min={1}
+                                          value={pobQuantities[idx] ?? 1}
+                                          onChange={(e) =>
+                                            setPobQuantities((prev) => ({
+                                              ...prev,
+                                              [idx]: Math.max(
+                                                1,
+                                                Number(e.target.value) || 1,
+                                              ),
+                                            }))
+                                          }
+                                          className="w-16 text-right rounded border border-border bg-background px-2 py-0.5 text-xs font-mono text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                                          data-ocid="pob.input"
+                                        />
+                                      </td>
+                                    </tr>
+                                  ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </div>
+                      <DialogFooter className="gap-2">
+                        <Button
+                          variant="outline"
+                          onClick={() => setPobOpen(false)}
+                          className="font-mono text-xs"
+                          data-ocid="pob.cancel_button"
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          onClick={handleGeneratePOB}
+                          className="font-mono text-xs bg-green-600 text-white hover:bg-green-700"
+                          data-ocid="pob.confirm_button"
+                        >
+                          <ClipboardList className="h-3.5 w-3.5 mr-1" />
+                          Generate POB
                         </Button>
                       </DialogFooter>
                     </DialogContent>
